@@ -7,6 +7,7 @@ mod markdown;
 use markdown::*;
 
 use katex;
+use katex::OutputType;
 
 // fn convert_span_html(span: &Span) -> String {
 //     let mut result: String = String::default();
@@ -107,7 +108,10 @@ fn to_html(node: MarkdownNode) -> String {
         }
         MarkdownNode::Math(math) => {
             result.push_str("<center>");
-            result.push_str(katex::render(math).unwrap());
+
+            let opts = katex::Opts::builder().output_type(OutputType::Mathml).build().unwrap();
+            result.push_str(&katex::render_with_opts(&math, opts).unwrap());
+
             result.push_str("</center>");
         }
     }
@@ -119,7 +123,7 @@ fn main() -> Result<(), std::io::Error> {
     let header = include_str!("header.html");
     let footer = include_str!("footer.html");
 
-    let markdown = fs::read_to_string("test_simple.md")?;
+    let markdown = fs::read_to_string("examples/test_math.md")?;
 
     let parser: Parser = Parser::new(&markdown);
 

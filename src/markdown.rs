@@ -120,7 +120,9 @@ impl<'a> Parser<'a> {
                 return Some(MarkdownNode::List(nodes));
             }
         } else if current_char == "$" {
+            self.consume();
             let math = self.consume_until(|c| c == "$");
+            self.consume();
 
             return Some(MarkdownNode::Math(math));
         }
