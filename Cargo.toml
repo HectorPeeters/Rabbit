@@ -1,0 +1,11 @@
+[package]
+name = "site_generator"
+version = "0.1.0"
+authors = ["Hector Peeters <hector.peeters@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+# markdown = "0.2.0"
+syntect = "4.2"
+unicode-segmentation = "1.6.0"
+katex = "0.2.1"
