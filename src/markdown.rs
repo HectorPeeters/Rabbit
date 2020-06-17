@@ -1,10 +1,15 @@
 use unicode_segmentation::UnicodeSegmentation;
 
+pub enum MathMode {
+    NonInline,
+    Inline,
+}
+
 pub enum MarkdownNode {
     Header(String, usize),
     Paragraph(String),
     List(Vec<MarkdownListItem>),
-    Math(String),
+    Math(String, MathMode),
     Code(String, String),
 }
 
@@ -133,11 +138,17 @@ impl<'a> Parser<'a> {
                 return Some(MarkdownNode::List(nodes));
             }
         } else if current_char == "$" {
-            self.consume();
-            let math = self.consume_until(|c| c == "$");
-            self.consume();
+            let dollars = self.consume_chars("$");
 
-            return Some(MarkdownNode::Math(math));
+            let mut mode = MathMode::Inline;
+            if dollars.len() == 2 {
+                mode = MathMode::NonInline;
+            }
+
+            let math = String::from(self.consume_until(|c| c == "$").trim());
+            self.consume_until(|c| c != "$");
+
+            return Some(MarkdownNode::Math(math, mode));
         } else if current_char == "`" {
             let hashtags = self.consume_chars("`");
             if hashtags.len() == 3 {
