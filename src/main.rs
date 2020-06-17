@@ -114,6 +114,13 @@ fn to_html(node: MarkdownNode) -> String {
 
             result.push_str("</center>");
         }
+        MarkdownNode::Code(lang, code) => {
+            result.push_str(&format!("<pre><code class=\"{}\">", lang));
+            
+            result.push_str(&code);
+
+            result.push_str("</code></pre>");
+        }
     }
 
     result

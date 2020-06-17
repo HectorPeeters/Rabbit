@@ -5,6 +5,7 @@ pub enum MarkdownNode {
     Paragraph(String),
     List(Vec<MarkdownListItem>),
     Math(String),
+    Code(String, String),
 }
 
 pub enum MarkdownListItem {
@@ -22,6 +23,10 @@ fn is_whitespace(string: String) -> bool {
 
 fn is_newline(string: String) -> bool {
     string == "\r\n" || string == "\n"
+}
+
+fn preprocess_html(string: String) -> String {
+    string.replace("<", "&lt;").replace(">", "&gt;")
 }
 
 impl<'a> Parser<'a> {
@@ -54,6 +59,10 @@ impl<'a> Parser<'a> {
         let mut result = String::default();
 
         loop {
+            if self.eof() {
+                break;
+            }
+
             let c = self.peek(0);
 
             if c != character {
@@ -75,10 +84,6 @@ impl<'a> Parser<'a> {
             }
 
             let c = self.peek(0);
-
-            if c == "\r" {
-                println!("YES");
-            }
 
             if f(c) {
                 break;
@@ -133,6 +138,28 @@ impl<'a> Parser<'a> {
             self.consume();
 
             return Some(MarkdownNode::Math(math));
+        } else if current_char == "`" {
+            let hashtags = self.consume_chars("`");
+            if hashtags.len() == 3 {
+                let mut lang = String::default();
+                if !is_newline(self.peek(0)) {
+                    lang = self.consume_until(is_newline).trim().to_lowercase();
+                }
+                
+                let mut code = String::from(self.consume_until(|c| c == "`").trim());
+
+                if lang == "html" {
+                    code = preprocess_html(code);
+                }
+                
+                self.consume_chars("`");
+
+                return Some(MarkdownNode::Code(lang, code));
+            }
+        }
+
+        if self.eof() {
+            return None;
         }
 
         let text = String::from(self.consume_until(is_newline).trim());
