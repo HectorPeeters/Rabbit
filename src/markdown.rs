@@ -20,6 +20,10 @@ fn is_whitespace(string: String) -> bool {
     string == " " || string == "\t"
 }
 
+fn is_newline(string: String) -> bool {
+    string == "\r\n" || string == "\n"
+}
+
 impl<'a> Parser<'a> {
     pub fn new(input: &'a str) -> Self {
         Parser {
@@ -42,11 +46,11 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn push_back(&mut self, count: usize) {
+    fn go_back(&mut self, count: usize) {
         self.index -= count;
     }
 
-    fn consume_char(&mut self, character: &str) -> String {
+    fn consume_chars(&mut self, character: &str) -> String {
         let mut result = String::default();
 
         loop {
@@ -72,6 +76,10 @@ impl<'a> Parser<'a> {
 
             let c = self.peek(0);
 
+            if c == "\r" {
+                println!("YES");
+            }
+
             if f(c) {
                 break;
             }
@@ -83,7 +91,7 @@ impl<'a> Parser<'a> {
     }
 
     fn skip_whitespace(&mut self) {
-        self.consume_until(|c| c != " " && c != "\t" && c != "\n" && c != "\r");
+        self.consume_until(|c| c != " " && c != "\t" && c != "\n" && c != "\r\n");
     }
 
     pub fn next_node(&mut self) -> Option<MarkdownNode> {
@@ -95,14 +103,14 @@ impl<'a> Parser<'a> {
 
         let current_char = self.peek(0);
         if current_char == "#" {
-            let hashtags = self.consume_char("#");
+            let hashtags = self.consume_chars("#");
 
             if is_whitespace(self.peek(0)) {
-                let header_name =
-                    String::from(self.consume_until(|c| c == "\n" || c == "\r").trim());
+                self.consume();
+                let header_name = String::from(self.consume_until(is_newline).trim());
                 return Some(MarkdownNode::Header(header_name, hashtags.len()));
             } else {
-                self.push_back(hashtags.len());
+                self.go_back(hashtags.len());
             }
         } else if current_char == "*" {
             let mut nodes: Vec<MarkdownListItem> = Vec::new();
@@ -111,7 +119,7 @@ impl<'a> Parser<'a> {
                 while !self.eof() && self.peek(0) == "*" {
                     self.consume();
 
-                    let text = String::from(self.consume_until(|c| c == "\n" || c == "\r").trim());
+                    let text = String::from(self.consume_until(is_newline).trim());
                     nodes.push(MarkdownListItem::ListItem(text));
 
                     self.skip_whitespace();
@@ -127,7 +135,7 @@ impl<'a> Parser<'a> {
             return Some(MarkdownNode::Math(math));
         }
 
-        let text = String::from(self.consume_until(|c| c == "\n").trim());
+        let text = String::from(self.consume_until(is_newline).trim());
 
         return Some(MarkdownNode::Paragraph(text));
     }
