@@ -44,16 +44,10 @@ impl ToHtml for MarkdownNode {
                 result.push_str("</ul>");
                 Some(result)
             }
-            MarkdownNode::Math(math, mode) => {
-                Some(match mode {
-                    MathMode::NonInline => {
-                        format!("<center>${}$</center>", math)
-                    },
-                    MathMode::Inline => {
-                        format!("${}$", math)
-                    }
-                })
-            }
+            MarkdownNode::Math(math, mode) => Some(match mode {
+                MathMode::NonInline => format!("<center>${}$</center>", math),
+                MathMode::Inline => format!("${}$", math),
+            }),
             MarkdownNode::Code(lang, code) => Some(format!(
                 "<pre><code class=\"{}\">{}</code></pre>",
                 lang, code
