@@ -1,13 +1,30 @@
 use std::fs;
 
+use clap::{App, Arg};
+
 mod markdown;
 use markdown::*;
 
 fn main() -> Result<(), std::io::Error> {
-    let header = include_str!("header.html");
-    let footer = include_str!("footer.html");
+    let matches = App::new("Markdown Parser")
+        .version("1.0")
+        .author("Hector Peeters")
+        .about("Convert Markdown files into HTML!")
+        .arg(Arg::with_name("input").required(true).index(1))
+        .arg(Arg::with_name("header").short("h").takes_value(true))
+        .arg(Arg::with_name("footer").short("f").takes_value(true))
+        .get_matches();
 
-    let markdown = fs::read_to_string("examples/test_math.md")?;
+    let header : String = match matches.value_of("header") {
+        Some(x) => fs::read_to_string(x).expect("Failed to read header file"),
+        None => String::from(include_str!("header.html")),
+    };
+    let footer : String = match matches.value_of("footer") {
+        Some(x) => fs::read_to_string(x).expect("Failed to read footer file"),
+        None => String::from(include_str!("footer.html")),
+    };
+
+    let markdown = fs::read_to_string(matches.value_of("input").unwrap())?;
 
     let parser: Parser = Parser::new(&markdown);
 
@@ -18,7 +35,7 @@ fn main() -> Result<(), std::io::Error> {
         result.push_str(&html);
     }
 
-    result.push_str(footer);
+    result.push_str(&footer);
 
     fs::write("index.html", result)?;
 
