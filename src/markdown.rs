@@ -22,6 +22,61 @@ pub struct Parser<'a> {
     index: usize,
 }
 
+pub trait ToHtml {
+    fn to_html(&self) -> Option<String>;
+}
+
+impl ToHtml for MarkdownNode {
+    fn to_html(&self) -> Option<String> {
+        match self {
+            MarkdownNode::Header(text, level) => {
+                Some(format!("<h{}>{}</h{}>", level, text, level))
+            }
+            MarkdownNode::Paragraph(text) => {
+                Some(format!("<p>{}</p>", text))
+            }
+            MarkdownNode::List(items) => {
+                let mut result: String = String::default();
+                result.push_str("<ul>");
+                for text in items {
+                    match text {
+                        MarkdownListItem::ListItem(text) => {
+                            result.push_str(&format!("<li>{}</li>", text));
+                        }
+                    }
+                }
+                result.push_str("</ul>");
+                Some(result)
+            }
+            MarkdownNode::Math(math, mode) => {
+                let mut result: String = String::default();
+                match mode {
+                    MathMode::NonInline => {
+                        result.push_str("<center>");
+                    }
+                    _ => {}
+                }
+                
+                result.push_str("$");
+                result.push_str(&math);
+                result.push_str("$");
+    
+                match mode {
+                    MathMode::NonInline => {
+                        result.push_str("</center><br>");
+                    }
+                    _ => {}
+                }
+
+                Some(result)
+            }
+            MarkdownNode::Code(lang, code) => {
+                Some(format!("<pre><code class=\"{}\">{}</code></pre>", lang, code))
+            }
+        }
+    }
+}
+
 fn is_whitespace(string: String) -> bool {
     string == " " || string == "\t"
 }
