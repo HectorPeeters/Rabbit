@@ -146,50 +146,58 @@ impl<'a> Parser<'a> {
         }
 
         let current_char = self.peek(0);
-        if current_char == "#" {
-            let hashtags = self.consume_chars("#");
+        let result_node: Option<MarkdownNode> = match current_char.as_str() {
+            "#" => {
+                let hashtags = self.consume_chars("#");
 
-            if is_whitespace(self.peek(0)) {
+                if !is_whitespace(self.peek(0)) {
+                    self.go_back(hashtags.len());
+                    return None;
+                }
+
                 self.consume();
                 let header_name = String::from(self.consume_until(is_newline).trim());
                 return Some(MarkdownNode::Header(header_name, hashtags.len()));
-            } else {
-                self.go_back(hashtags.len());
             }
-        } else if current_char == "*" {
-            let mut nodes: Vec<MarkdownListItem> = Vec::new();
+            "*" => {
+                let mut nodes: Vec<MarkdownListItem> = Vec::new();
 
-            if is_whitespace(self.peek(1)) {
+                if !is_whitespace(self.peek(1)) {
+                    return None;
+                }
+
                 while !self.eof() && self.peek(0) == "*" {
                     self.consume();
-
                     let text = String::from(self.consume_until(is_newline).trim());
                     nodes.push(MarkdownListItem::ListItem(text));
-
                     self.skip_whitespace();
                 }
 
                 return Some(MarkdownNode::List(nodes));
             }
-        } else if current_char == "$" {
-            let dollars = self.consume_chars("$");
+            "$" => {
+                let dollars = self.consume_chars("$");
 
-            let mut mode = MathMode::Inline;
-            if dollars.len() == 2 {
-                mode = MathMode::NonInline;
+                let mut mode = MathMode::Inline;
+                if dollars.len() == 2 {
+                    mode = MathMode::NonInline;
+                }
+
+                let math = String::from(self.consume_until(|c| c == "$").trim());
+                self.consume_until(|c| c != "$");
+
+                return Some(MarkdownNode::Math(math, mode));
             }
+            "`" => {
+                if self.consume_chars("`").len() != 3 {
+                    return None;
+                }
 
-            let math = String::from(self.consume_until(|c| c == "$").trim());
-            self.consume_until(|c| c != "$");
-
-            return Some(MarkdownNode::Math(math, mode));
-        } else if current_char == "`" {
-            let hashtags = self.consume_chars("`");
-            if hashtags.len() == 3 {
                 let mut lang = String::default();
                 if !is_newline(self.peek(0)) {
                     lang = self.consume_until(is_newline).trim().to_lowercase();
                 }
+
                 let mut code = String::from(self.consume_until(|c| c == "`").trim());
 
                 if lang == "html" {
@@ -199,15 +207,20 @@ impl<'a> Parser<'a> {
 
                 return Some(MarkdownNode::Code(lang, code));
             }
+            _ => None,
+        };
+
+        match result_node {
+            Some(x) => return Some(x),
+            None => {
+                if self.eof() {
+                    return None;
+                }
+
+                let text = String::from(self.consume_until(is_newline).trim());
+                return Some(MarkdownNode::Paragraph(text));
+            }
         }
-
-        if self.eof() {
-            return None;
-        }
-
-        let text = String::from(self.consume_until(is_newline).trim());
-
-        return Some(MarkdownNode::Paragraph(text));
     }
 }
 
