@@ -23,14 +23,14 @@ pub struct Parser<'a> {
 }
 
 pub trait ToHtml {
-    fn to_html(&self) -> Option<String>;
+    fn to_html(&self) -> String;
 }
 
 impl ToHtml for MarkdownNode {
-    fn to_html(&self) -> Option<String> {
+    fn to_html(&self) -> String {
         match self {
-            MarkdownNode::Header(text, level) => Some(format!("<h{}>{}</h{}>", level, text, level)),
-            MarkdownNode::Paragraph(text) => Some(format!("<p>{}</p>", text)),
+            MarkdownNode::Header(text, level) => format!("<h{}>{}</h{}>", level, text, level),
+            MarkdownNode::Paragraph(text) => format!("<p>{}</p>", text),
             MarkdownNode::List(items) => {
                 let mut result: String = String::default();
                 result.push_str("<ul>");
@@ -42,16 +42,16 @@ impl ToHtml for MarkdownNode {
                     }
                 }
                 result.push_str("</ul>");
-                Some(result)
+                result
             }
-            MarkdownNode::Math(math, mode) => Some(match mode {
+            MarkdownNode::Math(math, mode) => match mode {
                 MathMode::NonInline => format!("<center>${}$</center>", math),
                 MathMode::Inline => format!("${}$", math),
-            }),
-            MarkdownNode::Code(lang, code) => Some(format!(
+            },
+            MarkdownNode::Code(lang, code) => format!(
                 "<pre><code class=\"{}\">{}</code></pre>",
                 lang, code
-            )),
+            ),
         }
     }
 }

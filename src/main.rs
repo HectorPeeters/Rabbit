@@ -14,7 +14,7 @@ fn main() -> Result<(), std::io::Error> {
     let mut result = String::from(header);
 
     for node in parser {
-        let html = node.to_html().expect("Failed to convert node to html");
+        let html = node.to_html();
         result.push_str(&html);
     }
 
