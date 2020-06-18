@@ -29,12 +29,8 @@ pub trait ToHtml {
 impl ToHtml for MarkdownNode {
     fn to_html(&self) -> Option<String> {
         match self {
-            MarkdownNode::Header(text, level) => {
-                Some(format!("<h{}>{}</h{}>", level, text, level))
-            }
-            MarkdownNode::Paragraph(text) => {
-                Some(format!("<p>{}</p>", text))
-            }
+            MarkdownNode::Header(text, level) => Some(format!("<h{}>{}</h{}>", level, text, level)),
+            MarkdownNode::Paragraph(text) => Some(format!("<p>{}</p>", text)),
             MarkdownNode::List(items) => {
                 let mut result: String = String::default();
                 result.push_str("<ul>");
@@ -49,30 +45,19 @@ impl ToHtml for MarkdownNode {
                 Some(result)
             }
             MarkdownNode::Math(math, mode) => {
-                let mut result: String = String::default();
-                match mode {
+                Some(match mode {
                     MathMode::NonInline => {
-                        result.push_str("<center>");
+                        format!("<center>${}$</center>", math)
+                    },
+                    MathMode::Inline => {
+                        format!("${}$", math)
                     }
-                    _ => {}
-                }
-                
-                result.push_str("$");
-                result.push_str(&math);
-                result.push_str("$");
-    
-                match mode {
-                    MathMode::NonInline => {
-                        result.push_str("</center><br>");
-                    }
-                    _ => {}
-                }
-
-                Some(result)
+                })
             }
-            MarkdownNode::Code(lang, code) => {
-                Some(format!("<pre><code class=\"{}\">{}</code></pre>", lang, code))
-            }
+            MarkdownNode::Code(lang, code) => Some(format!(
+                "<pre><code class=\"{}\">{}</code></pre>",
+                lang, code
+            )),
         }
     }
 }
@@ -211,13 +196,11 @@ impl<'a> Parser<'a> {
                 if !is_newline(self.peek(0)) {
                     lang = self.consume_until(is_newline).trim().to_lowercase();
                 }
-                
                 let mut code = String::from(self.consume_until(|c| c == "`").trim());
 
                 if lang == "html" {
                     code = preprocess_html(code);
                 }
-                
                 self.consume_chars("`");
 
                 return Some(MarkdownNode::Code(lang, code));
