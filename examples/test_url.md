@@ -2,6 +2,6 @@
 
 ## Test
 
-<http://www.google.com>
+This is a link to <http://www.google.com>.
 
-[test](www.google.com)
+And here you can even click on the link to [Google](http://www.google.com)!

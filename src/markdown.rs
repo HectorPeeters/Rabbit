@@ -220,6 +220,25 @@ impl<'a> Parser<'a> {
 
                 return Some(MarkdownNode::URL(name, url));
             }
+            "[" => {
+                self.consume();
+
+                let name = self.consume_until(|c| c == "]");
+
+                self.consume();
+
+                let mut url = String::default();
+
+                if self.peek(0) == "(" {
+                    self.consume();
+                    
+                    url = self.consume_until(|c| c == ")");
+
+                    self.consume();
+                }
+
+                return Some(MarkdownNode::URL(name, url));
+            }
             _ => None,
         };
 
@@ -230,7 +249,7 @@ impl<'a> Parser<'a> {
                     return None;
                 }
 
-                let text = String::from(self.consume_until(is_newline).trim());
+                let text = String::from(self.consume_until(|c| c == "[" || c == "<" || c == "\n" || c == "\r\n").trim());
                 return Some(MarkdownNode::Paragraph(text));
             }
         }
