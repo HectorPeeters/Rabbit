@@ -15,11 +15,11 @@ fn main() -> Result<(), std::io::Error> {
         .arg(Arg::with_name("footer").short("f").takes_value(true))
         .get_matches();
 
-    let header : String = match matches.value_of("header") {
+    let header: String = match matches.value_of("header") {
         Some(x) => fs::read_to_string(x).expect("Failed to read header file"),
         None => String::from(include_str!("header.html")),
     };
-    let footer : String = match matches.value_of("footer") {
+    let footer: String = match matches.value_of("footer") {
         Some(x) => fs::read_to_string(x).expect("Failed to read footer file"),
         None => String::from(include_str!("footer.html")),
     };

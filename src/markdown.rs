@@ -11,6 +11,7 @@ pub enum MarkdownNode {
     List(Vec<MarkdownListItem>),
     Math(String, MathMode),
     Code(String, String),
+    URL(String, String),
 }
 
 pub enum MarkdownListItem {
@@ -45,13 +46,15 @@ impl ToHtml for MarkdownNode {
                 result
             }
             MarkdownNode::Math(math, mode) => match mode {
-                MathMode::NonInline => format!("<center>${}$</center>", math),
+                MathMode::NonInline => format!("<center>${}$</center><br>", math),
                 MathMode::Inline => format!("${}$", math),
             },
-            MarkdownNode::Code(lang, code) => format!(
-                "<pre><code class=\"{}\">{}</code></pre>",
-                lang, code
-            ),
+            MarkdownNode::Code(lang, code) => {
+                format!("<pre><code class=\"{}\">{}</code></pre>", lang, code)
+            }
+            MarkdownNode::URL(name, url) => {
+                format!("<a href=\"{}\">{}</a>", url, name)
+            }
         }
     }
 }
@@ -206,6 +209,16 @@ impl<'a> Parser<'a> {
                 self.consume_chars("`");
 
                 return Some(MarkdownNode::Code(lang, code));
+            }
+            "<" => {
+                self.consume();
+
+                let url = self.consume_until(|c| c == ">");
+                let name = url.clone();
+
+                self.consume();
+
+                return Some(MarkdownNode::URL(name, url));
             }
             _ => None,
         };
