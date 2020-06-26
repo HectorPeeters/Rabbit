@@ -141,6 +141,101 @@ impl<'a> Parser<'a> {
         self.consume_until(|c| c != " " && c != "\t" && c != "\n" && c != "\r\n");
     }
 
+    fn parse_hashtag(&mut self) -> Option<MarkdownNode> {
+        let hashtags = self.consume_chars("#");
+
+        if !is_whitespace(self.peek(0)) {
+            self.go_back(hashtags.len());
+            return None;
+        }
+
+        self.consume();
+        let header_name = String::from(self.consume_until(is_newline).trim());
+        return Some(MarkdownNode::Header(header_name, hashtags.len()));
+    }
+
+    fn parse_asterix(&mut self) -> Option<MarkdownNode> {
+        let mut nodes: Vec<MarkdownListItem> = Vec::new();
+
+        if !is_whitespace(self.peek(1)) {
+            return None;
+        }
+
+        while !self.eof() && self.peek(0) == "*" {
+            self.consume();
+            let text = String::from(self.consume_until(is_newline).trim());
+            nodes.push(MarkdownListItem::ListItem(text));
+            self.skip_whitespace();
+        }
+
+        return Some(MarkdownNode::List(nodes));
+    }
+
+    fn parse_dollar(&mut self) -> Option<MarkdownNode> {
+        let dollars = self.consume_chars("$");
+
+        let mut mode = MathMode::Inline;
+        if dollars.len() == 2 {
+            mode = MathMode::NonInline;
+        }
+
+        let math = String::from(self.consume_until(|c| c == "$").trim());
+        self.consume_until(|c| c != "$");
+
+        return Some(MarkdownNode::Math(math, mode));
+    }
+
+    fn parse_less_then(&mut self) -> Option<MarkdownNode> {
+        self.consume();
+
+        let url = self.consume_until(|c| c == ">");
+        let name = url.clone();
+
+        self.consume();
+
+        return Some(MarkdownNode::URL(name, url));
+    }
+
+    fn parse_backtick(&mut self) -> Option<MarkdownNode> {
+        if self.consume_chars("`").len() != 3 {
+            return None;
+        }
+
+        let mut lang = String::default();
+        if !is_newline(self.peek(0)) {
+            lang = self.consume_until(is_newline).trim().to_lowercase();
+        }
+
+        let mut code = String::from(self.consume_until(|c| c == "`").trim());
+
+        if lang == "html" {
+            code = preprocess_html(code);
+        }
+        self.consume_chars("`");
+
+        return Some(MarkdownNode::Code(lang, code));
+    }
+
+    fn parse_square_bracket(&mut self) -> Option<MarkdownNode> {
+        self.consume();
+
+        let name = self.consume_until(|c| c == "]");
+
+        self.consume();
+
+        let mut url = String::default();
+
+        if self.peek(0) == "(" {
+            self.consume();
+                    
+            url = self.consume_until(|c| c == ")");
+
+            self.consume();
+        }
+
+        return Some(MarkdownNode::URL(name, url));
+    }
+
     pub fn next_node(&mut self) -> Option<MarkdownNode> {
         self.skip_whitespace();
 
@@ -150,95 +245,12 @@ impl<'a> Parser<'a> {
 
         let current_char = self.peek(0);
         let result_node: Option<MarkdownNode> = match current_char.as_str() {
-            "#" => {
-                let hashtags = self.consume_chars("#");
-
-                if !is_whitespace(self.peek(0)) {
-                    self.go_back(hashtags.len());
-                    return None;
-                }
-
-                self.consume();
-                let header_name = String::from(self.consume_until(is_newline).trim());
-                return Some(MarkdownNode::Header(header_name, hashtags.len()));
-            }
-            "*" => {
-                let mut nodes: Vec<MarkdownListItem> = Vec::new();
-
-                if !is_whitespace(self.peek(1)) {
-                    return None;
-                }
-
-                while !self.eof() && self.peek(0) == "*" {
-                    self.consume();
-                    let text = String::from(self.consume_until(is_newline).trim());
-                    nodes.push(MarkdownListItem::ListItem(text));
-                    self.skip_whitespace();
-                }
-
-                return Some(MarkdownNode::List(nodes));
-            }
-            "$" => {
-                let dollars = self.consume_chars("$");
-
-                let mut mode = MathMode::Inline;
-                if dollars.len() == 2 {
-                    mode = MathMode::NonInline;
-                }
-
-                let math = String::from(self.consume_until(|c| c == "$").trim());
-                self.consume_until(|c| c != "$");
-
-                return Some(MarkdownNode::Math(math, mode));
-            }
-            "`" => {
-                if self.consume_chars("`").len() != 3 {
-                    return None;
-                }
-
-                let mut lang = String::default();
-                if !is_newline(self.peek(0)) {
-                    lang = self.consume_until(is_newline).trim().to_lowercase();
-                }
-
-                let mut code = String::from(self.consume_until(|c| c == "`").trim());
-
-                if lang == "html" {
-                    code = preprocess_html(code);
-                }
-                self.consume_chars("`");
-
-                return Some(MarkdownNode::Code(lang, code));
-            }
-            "<" => {
-                self.consume();
-
-                let url = self.consume_until(|c| c == ">");
-                let name = url.clone();
-
-                self.consume();
-
-                return Some(MarkdownNode::URL(name, url));
-            }
-            "[" => {
-                self.consume();
-
-                let name = self.consume_until(|c| c == "]");
-
-                self.consume();
-
-                let mut url = String::default();
-
-                if self.peek(0) == "(" {
-                    self.consume();
-                    
-                    url = self.consume_until(|c| c == ")");
-
-                    self.consume();
-                }
-
-                return Some(MarkdownNode::URL(name, url));
-            }
+            "#" => self.parse_hashtag(),
+            "*" => self.parse_asterix(),
+            "$" => self.parse_dollar(),
+            "`" => self.parse_backtick(),
+            "<" => self.parse_less_then(),
+            "[" => self.parse_square_bracket(),
             _ => None,
         };
 
