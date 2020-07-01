@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Hector Peeters <hector.peeters@gmail.com>"]
 edition = "2018"
 
+[lib]
+path = "src/lib.rs"
+
 [dependencies]
 # markdown = "0.2.0"
 # syntect = "4.2"
