@@ -1,17 +1,18 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-pub enum MathMode {
-    NonInline,
-    Inline,
-}
-
 pub enum MarkdownNode {
     Header(String, usize),
-    Paragraph(String),
+    Paragraph(Vec<ParagraphItem>),
     List(Vec<MarkdownListItem>),
-    Math(String, MathMode),
+    Math(String),
     Code(String, String),
-    URL(String, String),
+}
+
+pub enum ParagraphItem {
+    Text(String),
+    Bold(String),
+    Url(String, String),
+    InlineMath(String),
 }
 
 pub enum MarkdownListItem {
@@ -27,11 +28,21 @@ pub trait ToHtml {
     fn to_html(&self) -> String;
 }
 
+impl ToHtml for ParagraphItem {
+    fn to_html(&self) -> String {
+        match self {
+            ParagraphItem::Text(text) => String::from(text),
+            ParagraphItem::Bold(text) => format!("<b>{}</b>", text),
+            ParagraphItem::Url(name, url) => format!("<a href=\"{}\">{}</a>", url, name),
+            ParagraphItem::InlineMath(math) => format!("${}$", math),
+        }
+    }
+}
+
 impl ToHtml for MarkdownNode {
     fn to_html(&self) -> String {
         match self {
             MarkdownNode::Header(text, level) => format!("<h{}>{}</h{}>", level, text, level),
-            MarkdownNode::Paragraph(text) => format!("<p>{}</p>", text),
             MarkdownNode::List(items) => {
                 let mut result: String = String::default();
                 result.push_str("<ul>");
@@ -45,15 +56,19 @@ impl ToHtml for MarkdownNode {
                 result.push_str("</ul>");
                 result
             }
-            MarkdownNode::Math(math, mode) => match mode {
-                MathMode::NonInline => format!("<center>${}$</center><br>", math),
-                MathMode::Inline => format!("${}$", math),
-            },
+            MarkdownNode::Math(math) => format!("<center>${}$</center><br>", math),
             MarkdownNode::Code(lang, code) => {
                 format!("<pre><code class=\"{}\">{}</code></pre>", lang, code)
             }
-            MarkdownNode::URL(name, url) => {
-                format!("<a href=\"{}\">{}</a>", url, name)
+            MarkdownNode::Paragraph(children) => {
+                let mut result: String = String::default();
+
+                for child in children {
+                    result.push_str(child.to_html().as_str());
+                }
+                result.push_str("<br>");
+
+                result
             }
         }
     }
@@ -141,7 +156,7 @@ impl<'a> Parser<'a> {
         self.consume_until(|c| c != " " && c != "\t" && c != "\n" && c != "\r\n");
     }
 
-    fn parse_hashtag(&mut self) -> Option<MarkdownNode> {
+    fn parse_header(&mut self) -> Option<MarkdownNode> {
         let hashtags = self.consume_chars("#");
 
         if !is_whitespace(self.peek(0)) {
@@ -151,10 +166,11 @@ impl<'a> Parser<'a> {
 
         self.consume();
         let header_name = String::from(self.consume_until(is_newline).trim());
-        return Some(MarkdownNode::Header(header_name, hashtags.len()));
+
+        Some(MarkdownNode::Header(header_name, hashtags.len()))
     }
 
-    fn parse_asterix(&mut self) -> Option<MarkdownNode> {
+    fn parse_list(&mut self) -> Option<MarkdownNode> {
         let mut nodes: Vec<MarkdownListItem> = Vec::new();
 
         if !is_whitespace(self.peek(1)) {
@@ -168,24 +184,19 @@ impl<'a> Parser<'a> {
             self.skip_whitespace();
         }
 
-        return Some(MarkdownNode::List(nodes));
+        Some(MarkdownNode::List(nodes))
     }
 
-    fn parse_dollar(&mut self) -> Option<MarkdownNode> {
-        let dollars = self.consume_chars("$");
-
-        let mut mode = MathMode::Inline;
-        if dollars.len() == 2 {
-            mode = MathMode::NonInline;
-        }
+    fn parse_math(&mut self) -> Option<MarkdownNode> {
+        self.consume_chars("$");
 
         let math = String::from(self.consume_until(|c| c == "$").trim());
         self.consume_until(|c| c != "$");
 
-        return Some(MarkdownNode::Math(math, mode));
+        Some(MarkdownNode::Math(math))
     }
 
-    fn parse_less_then(&mut self) -> Option<MarkdownNode> {
+    fn parse_url(&mut self) -> ParagraphItem {
         self.consume();
 
         let url = self.consume_until(|c| c == ">");
@@ -193,10 +204,10 @@ impl<'a> Parser<'a> {
 
         self.consume();
 
-        return Some(MarkdownNode::URL(name, url));
+        ParagraphItem::Url(name, url)
     }
 
-    fn parse_backtick(&mut self) -> Option<MarkdownNode> {
+    fn parse_code(&mut self) -> Option<MarkdownNode> {
         if self.consume_chars("`").len() != 3 {
             return None;
         }
@@ -213,10 +224,10 @@ impl<'a> Parser<'a> {
         }
         self.consume_chars("`");
 
-        return Some(MarkdownNode::Code(lang, code));
+        Some(MarkdownNode::Code(lang, code))
     }
 
-    fn parse_square_bracket(&mut self) -> Option<MarkdownNode> {
+    fn parse_named_url(&mut self) -> ParagraphItem {
         self.consume();
 
         let name = self.consume_until(|c| c == "]");
@@ -227,13 +238,55 @@ impl<'a> Parser<'a> {
 
         if self.peek(0) == "(" {
             self.consume();
-                    
             url = self.consume_until(|c| c == ")");
 
             self.consume();
         }
 
-        return Some(MarkdownNode::URL(name, url));
+        ParagraphItem::Url(name, url)
+    }
+
+    fn parse_paragraph(&mut self) -> Option<MarkdownNode> {
+        let mut result: Vec<ParagraphItem> = Vec::new();
+
+        loop {
+            if self.eof() {
+                break;
+            }
+
+            let curr = self.peek(0);
+
+            if curr == "\n" || curr == "\r\n" || curr == "`" {
+                break;
+            }
+
+            let child = match curr.as_str() {
+                "*" => {
+                    self.consume();
+                    let text = self.consume_until(|c| c == "*");
+                    self.consume();
+                    ParagraphItem::Bold(text)
+                }
+                "$" => {
+                    self.consume();
+                    let text = self.consume_until(|c| c == "$");
+                    self.consume();
+                    ParagraphItem::InlineMath(text)
+                }
+                "<" => self.parse_url(),
+                "[" => self.parse_named_url(),
+                _ => {
+                    let text = self.consume_until(|c| {
+                        c == "<" || c == "*" || c == "$" || c == "[" || is_newline(c)
+                    });
+                    ParagraphItem::Text(text)
+                }
+            };
+
+            result.push(child);
+        }
+
+        Some(MarkdownNode::Paragraph(result))
     }
 
     pub fn next_node(&mut self) -> Option<MarkdownNode> {
@@ -245,26 +298,14 @@ impl<'a> Parser<'a> {
 
         let current_char = self.peek(0);
         let result_node: Option<MarkdownNode> = match current_char.as_str() {
-            "#" => self.parse_hashtag(),
-            "*" => self.parse_asterix(),
-            "$" => self.parse_dollar(),
-            "`" => self.parse_backtick(),
-            "<" => self.parse_less_then(),
-            "[" => self.parse_square_bracket(),
-            _ => None,
+            "#" => self.parse_header(),
+            "$" => self.parse_math(),
+            "`" => self.parse_code(),
+            "*" => self.parse_list(),
+            _ => self.parse_paragraph(),
         };
 
-        match result_node {
-            Some(x) => return Some(x),
-            None => {
-                if self.eof() {
-                    return None;
-                }
-
-                let text = String::from(self.consume_until(|c| c == "[" || c == "<" || c == "\n" || c == "\r\n").trim());
-                return Some(MarkdownNode::Paragraph(text));
-            }
-        }
+        result_node
     }
 }
 

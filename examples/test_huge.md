@@ -12,7 +12,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -32,7 +32,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -52,7 +52,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -72,7 +72,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -92,7 +92,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -112,7 +112,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -132,7 +132,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -152,7 +152,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -172,7 +172,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -192,7 +192,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -212,7 +212,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -232,7 +232,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -252,7 +252,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -272,7 +272,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -292,7 +292,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -312,7 +312,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -332,7 +332,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -352,7 +352,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -372,7 +372,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -392,7 +392,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -412,7 +412,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -432,7 +432,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -452,7 +452,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -472,7 +472,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -492,7 +492,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -512,7 +512,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -532,7 +532,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -552,7 +552,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -572,7 +572,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -592,7 +592,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -612,7 +612,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -632,7 +632,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -652,7 +652,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -672,7 +672,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -692,7 +692,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -712,7 +712,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -732,7 +732,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -752,7 +752,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -772,7 +772,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -792,7 +792,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -812,7 +812,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -832,7 +832,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -852,7 +852,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -872,7 +872,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -892,7 +892,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -912,7 +912,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -932,7 +932,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -952,7 +952,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -972,7 +972,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
@@ -992,7 +992,7 @@ $124$
 
 This is a more advanced function
 
-$ \frac{12x}{\sqrt{54}\Epsilon} $
+$ \frac{12x}{\sqrt{54}\epsilon} $
 
 And even integrals!
 
