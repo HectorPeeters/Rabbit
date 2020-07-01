@@ -10,7 +10,7 @@ pub enum MarkdownNode {
 
 pub enum ParagraphItem {
     Text(String),
-    Bold(String),
+    Italic(String),
     Url(String, String),
     InlineMath(String),
 }
@@ -32,7 +32,7 @@ impl ToHtml for ParagraphItem {
     fn to_html(&self) -> String {
         match self {
             ParagraphItem::Text(text) => String::from(text),
-            ParagraphItem::Bold(text) => format!("<b>{}</b>", text),
+            ParagraphItem::Italic(text) => format!("<em>{}</em>", text),
             ParagraphItem::Url(name, url) => format!("<a href=\"{}\">{}</a>", url, name),
             ParagraphItem::InlineMath(math) => format!("${}$", math),
         }
@@ -265,7 +265,7 @@ impl<'a> Parser<'a> {
                     self.consume();
                     let text = self.consume_until(|c| c == "*");
                     self.consume();
-                    ParagraphItem::Bold(text)
+                    ParagraphItem::Italic(text)
                 }
                 "$" => {
                     self.consume();
