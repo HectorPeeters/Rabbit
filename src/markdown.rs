@@ -11,6 +11,7 @@ pub enum MarkdownNode {
 pub enum ParagraphItem {
     Text(String),
     Italic(String),
+    Bold(String),
     Url(String, String),
     InlineMath(String),
 }
@@ -33,6 +34,7 @@ impl ToHtml for ParagraphItem {
         match self {
             ParagraphItem::Text(text) => String::from(text),
             ParagraphItem::Italic(text) => format!("<em>{}</em>", text),
+            ParagraphItem::Bold(text) => format!("<b>{}</b>", text),
             ParagraphItem::Url(name, url) => format!("<a href=\"{}\">{}</a>", url, name),
             ParagraphItem::InlineMath(math) => format!("${}$", math),
         }
@@ -262,10 +264,15 @@ impl<'a> Parser<'a> {
 
             let child = match curr.as_str() {
                 "*" => {
-                    self.consume();
+                    let stars = self.consume_until(|c| c != "*").len();
                     let text = self.consume_until(|c| c == "*");
-                    self.consume();
-                    ParagraphItem::Italic(text)
+                    self.consume_chars("*");
+
+                    if stars == 1 {
+                        ParagraphItem::Italic(text)
+                    } else {
+                        ParagraphItem::Bold(text)
+                    }
                 }
                 "$" => {
                     self.consume();
