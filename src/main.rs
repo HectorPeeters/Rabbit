@@ -26,15 +26,10 @@ fn main() -> Result<(), std::io::Error> {
 
     let markdown = fs::read_to_string(matches.value_of("input").unwrap())?;
 
-    let parser: Parser = Parser::new(&markdown);
+    let mut parser: Parser = Parser::new(&markdown);
 
     let mut result = String::from(header);
-
-    for node in parser {
-        let html = node.to_html();
-        result.push_str(&html);
-    }
-
+    result.push_str(parser.to_html().as_str());
     result.push_str(&footer);
 
     fs::write("index.html", result)?;

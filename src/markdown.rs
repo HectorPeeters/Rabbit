@@ -314,6 +314,21 @@ impl<'a> Parser<'a> {
 
         result_node
     }
+
+    pub fn to_html(&mut self) -> String {
+        let mut result = String::new();
+
+        loop {
+            let node = self.next_node();
+
+            match node {
+                Some(x) => result.push_str(x.to_html().as_str()),
+                None => break,
+            }
+        }
+
+        result
+    }
 }
 
 impl Iterator for Parser<'_> {
