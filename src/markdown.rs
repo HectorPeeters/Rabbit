@@ -14,6 +14,7 @@ pub enum ParagraphItem {
     Bold(String),
     Url(String, String),
     InlineMath(String),
+    Image(String, String),
 }
 
 pub enum MarkdownListItem {
@@ -37,6 +38,9 @@ impl ToHtml for ParagraphItem {
             ParagraphItem::Bold(text) => format!("<b>{}</b>", text),
             ParagraphItem::Url(name, url) => format!("<a href=\"{}\">{}</a>", url, name),
             ParagraphItem::InlineMath(math) => format!("${}$", math),
+            ParagraphItem::Image(url, alt_text) => {
+                format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
+            }
         }
     }
 }
@@ -248,6 +252,21 @@ impl<'a> Parser<'a> {
         ParagraphItem::Url(name, url)
     }
 
+    fn parse_image(&mut self) -> ParagraphItem {
+        self.consume();
+        self.consume();
+
+        let alt_text = self.consume_until(|c| c == "]");
+
+        self.consume();
+        self.consume();
+
+        let url = self.consume_until(|c| c == ")");
+        self.consume();
+
+        ParagraphItem::Image(url, alt_text)
+    }
+
     fn parse_paragraph(&mut self) -> Option<MarkdownNode> {
         let mut result: Vec<ParagraphItem> = Vec::new();
 
@@ -282,6 +301,7 @@ impl<'a> Parser<'a> {
                 }
                 "<" => self.parse_url(),
                 "[" => self.parse_named_url(),
+                "!" => self.parse_image(),
                 _ => {
                     let text = self.consume_until(|c| {
                         c == "<" || c == "*" || c == "$" || c == "[" || is_newline(c)
