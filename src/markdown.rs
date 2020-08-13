@@ -15,6 +15,7 @@ pub enum ParagraphItem {
     Url(String, String),
     InlineMath(String),
     Image(String, String),
+    InlineCode(String),
 }
 
 pub enum MarkdownListItem {
@@ -41,6 +42,7 @@ impl ToHtml for ParagraphItem {
             ParagraphItem::Image(url, alt_text) => {
                 format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
             }
+            ParagraphItem::InlineCode(code) => format!("<code>{}</code>", code),
         }
     }
 }
@@ -72,7 +74,7 @@ impl ToHtml for MarkdownNode {
                 for child in children {
                     result.push_str(child.to_html().as_str());
                 }
-                result.push_str("<br>");
+                result.push_str("<br><br>");
 
                 result
             }
@@ -233,6 +235,7 @@ impl<'a> Parser<'a> {
         Some(MarkdownNode::Code(lang, code))
     }
 
+
     fn parse_named_url(&mut self) -> ParagraphItem {
         self.consume();
 
@@ -277,7 +280,7 @@ impl<'a> Parser<'a> {
 
             let curr = self.peek(0);
 
-            if curr == "\n" || curr == "\r\n" || curr == "`" {
+            if curr == "\n" || curr == "\r\n" {
                 break;
             }
 
@@ -302,9 +305,15 @@ impl<'a> Parser<'a> {
                 "<" => self.parse_url(),
                 "[" => self.parse_named_url(),
                 "!" => self.parse_image(),
+                "`" => {
+                    self.consume();
+                    let code = self.consume_until(|c| c == "`");
+                    self.consume();
+                    ParagraphItem::InlineCode(code)
+                }
                 _ => {
                     let text = self.consume_until(|c| {
-                        c == "<" || c == "*" || c == "$" || c == "[" || is_newline(c)
+                        c == "<" || c == "*" || c == "$" || c == "[" || c == "`" || is_newline(c)
                     });
                     ParagraphItem::Text(text)
                 }
