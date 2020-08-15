@@ -71,10 +71,11 @@ impl ToHtml for MarkdownNode {
             MarkdownNode::Paragraph(children) => {
                 let mut result: String = String::default();
 
+                result.push_str("<p>");
                 for child in children {
                     result.push_str(child.to_html().as_str());
                 }
-                result.push_str("<br><br>");
+                result.push_str("</p>");
 
                 result
             }
