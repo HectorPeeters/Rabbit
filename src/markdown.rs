@@ -185,7 +185,7 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        while !self.eof() && self.peek(0) == "*" {
+        while !self.eof() && (self.peek(0) == "*" || self.peek(0) == "-") {
             self.consume();
             let text = String::from(self.consume_until(is_newline).trim());
             nodes.push(MarkdownListItem::ListItem(text));
@@ -234,7 +234,6 @@ impl<'a> Parser<'a> {
 
         Some(MarkdownNode::Code(lang, code))
     }
-
 
     fn parse_named_url(&mut self) -> ParagraphItem {
         self.consume();
@@ -338,6 +337,7 @@ impl<'a> Parser<'a> {
             "$" => self.parse_math(),
             "`" => self.parse_code(),
             "*" => self.parse_list(),
+            "-" => self.parse_list(),
             _ => self.parse_paragraph(),
         };
 
