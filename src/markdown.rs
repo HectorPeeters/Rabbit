@@ -1,5 +1,6 @@
 use unicode_segmentation::UnicodeSegmentation;
 
+#[derive(Debug)]
 pub enum MarkdownNode {
     Header(String, usize),
     Paragraph(Vec<ParagraphItem>),
@@ -8,6 +9,7 @@ pub enum MarkdownNode {
     Code(String, String),
 }
 
+#[derive(Debug)]
 pub enum ParagraphItem {
     Text(String),
     Italic(String),
@@ -18,6 +20,7 @@ pub enum ParagraphItem {
     InlineCode(String),
 }
 
+#[derive(Debug)]
 pub enum MarkdownListItem {
     ListItem(String),
 }
