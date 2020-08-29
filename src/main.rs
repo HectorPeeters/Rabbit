@@ -11,6 +11,7 @@ fn main() -> Result<(), std::io::Error> {
         .author("Hector Peeters")
         .about("Convert Markdown files into HTML!")
         .arg(Arg::with_name("input").required(true).index(1))
+        .arg(Arg::with_name("output").short("o").takes_value(true))
         .arg(Arg::with_name("header").short("h").takes_value(true))
         .arg(Arg::with_name("footer").short("f").takes_value(true))
         .get_matches();
@@ -32,7 +33,8 @@ fn main() -> Result<(), std::io::Error> {
     result.push_str(parser.to_html().as_str());
     result.push_str(&footer);
 
-    fs::write("index.html", result)?;
+    let output_file: &str = matches.value_of("output").unwrap_or("index.html");
+    fs::write(output_file, result)?;
 
     Ok(())
 }
