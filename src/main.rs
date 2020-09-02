@@ -1,11 +1,33 @@
+use notify::{watcher, RecursiveMode, Watcher};
 use std::fs;
+use std::path::Path;
+use std::time::Duration;
+use std::{thread, time};
 
 use clap::{App, Arg};
 
 mod markdown;
 use markdown::*;
 
-fn main() -> Result<(), std::io::Error> {
+fn compile_file(path: &str, output: &str, header: &String, footer: &String) {
+    println!("{}", path);
+
+    if !Path::new(path).exists() {
+        panic!("Invalid input file");
+    }
+
+    let markdown = fs::read_to_string(path).unwrap();
+
+    let mut parser: Parser = Parser::new(&markdown);
+
+    let mut result = String::from(header);
+    result.push_str(parser.to_html().as_str());
+    result.push_str(&footer);
+
+    fs::write(output, result).unwrap();
+}
+
+fn main() {
     let matches = App::new("Markdown Parser")
         .version("1.0")
         .author("Hector Peeters")
@@ -14,6 +36,7 @@ fn main() -> Result<(), std::io::Error> {
         .arg(Arg::with_name("output").short("o").takes_value(true))
         .arg(Arg::with_name("header").short("h").takes_value(true))
         .arg(Arg::with_name("footer").short("f").takes_value(true))
+        .arg(Arg::with_name("watcher").short("w").takes_value(false))
         .get_matches();
 
     let header: String = match matches.value_of("header") {
@@ -25,16 +48,29 @@ fn main() -> Result<(), std::io::Error> {
         None => String::from(include_str!("footer.html")),
     };
 
-    let markdown = fs::read_to_string(matches.value_of("input").unwrap())?;
+    let input_file = matches.value_of("input").unwrap();
+    let output_file = matches.value_of("output").unwrap_or("index.html");
 
-    let mut parser: Parser = Parser::new(&markdown);
+    compile_file(input_file, output_file, &header, &footer);
 
-    let mut result = String::from(header);
-    result.push_str(parser.to_html().as_str());
-    result.push_str(&footer);
+    if matches.is_present("watcher") {
+        let (tx, rx) = std::sync::mpsc::channel();
 
-    let output_file: &str = matches.value_of("output").unwrap_or("index.html");
-    fs::write(output_file, result)?;
+        let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap();
 
-    Ok(())
+        loop {
+            watcher
+                .watch(input_file, RecursiveMode::NonRecursive)
+                .unwrap();
+
+            match rx.recv() {
+                Ok(_) => {
+                    thread::sleep(time::Duration::from_millis(100));
+                    compile_file(input_file, output_file, &header, &footer);
+                    println!("Recompiled {}", input_file);
+                }
+                Err(err) => println!("watch error: {:?}", err),
+            }
+        }
+    }
 }

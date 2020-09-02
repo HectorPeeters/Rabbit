@@ -183,8 +183,6 @@ impl<'a> Parser<'a> {
         while !self.eof() && (self.peek(0) == "*" || self.peek(0) == "-") {
             self.consume();
             nodes.push(self.next_node().expect("Failed to parse in list"));
-            // let text = String::from(self.consume_until(is_newline).trim());
-            // nodes.push(MarkdownListItem::ListItem(text));
             self.skip_whitespace();
         }
 
