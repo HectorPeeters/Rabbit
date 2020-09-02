@@ -4,7 +4,7 @@ use unicode_segmentation::UnicodeSegmentation;
 pub enum MarkdownNode {
     Header(String, usize),
     Paragraph(Vec<ParagraphItem>),
-    List(Vec<MarkdownListItem>),
+    List(Vec<MarkdownNode>),
     Math(String),
     Code(String, String),
 }
@@ -18,11 +18,6 @@ pub enum ParagraphItem {
     InlineMath(String),
     Image(String, String),
     InlineCode(String),
-}
-
-#[derive(Debug)]
-pub enum MarkdownListItem {
-    ListItem(String),
 }
 
 pub struct Parser<'a> {
@@ -57,12 +52,8 @@ impl ToHtml for MarkdownNode {
             MarkdownNode::List(items) => {
                 let mut result: String = String::default();
                 result.push_str("<ul>");
-                for text in items {
-                    match text {
-                        MarkdownListItem::ListItem(text) => {
-                            result.push_str(&format!("<li>{}</li>", text));
-                        }
-                    }
+                for node in items {
+                    result.push_str(&format!("<li>{}</li>", node.to_html()));
                 }
                 result.push_str("</ul>");
                 result
@@ -183,7 +174,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_list(&mut self) -> Option<MarkdownNode> {
-        let mut nodes: Vec<MarkdownListItem> = Vec::new();
+        let mut nodes: Vec<MarkdownNode> = Vec::new();
 
         if !is_whitespace(self.peek(1)) {
             return None;
@@ -191,8 +182,9 @@ impl<'a> Parser<'a> {
 
         while !self.eof() && (self.peek(0) == "*" || self.peek(0) == "-") {
             self.consume();
-            let text = String::from(self.consume_until(is_newline).trim());
-            nodes.push(MarkdownListItem::ListItem(text));
+            nodes.push(self.next_node().expect("Failed to parse in list"));
+            // let text = String::from(self.consume_until(is_newline).trim());
+            // nodes.push(MarkdownListItem::ListItem(text));
             self.skip_whitespace();
         }
 
@@ -340,9 +332,13 @@ impl<'a> Parser<'a> {
             "#" => self.parse_header(),
             "$" => self.parse_math(),
             "`" => self.parse_code(),
-            "*" => self.parse_list(),
             "-" => self.parse_list(),
-            _ => self.parse_paragraph(),
+            _ => {
+                if current_char == "*" && self.peek(1) != "*" {
+                    return self.parse_list();
+                }
+                self.parse_paragraph()
+            }
         };
 
         result_node
