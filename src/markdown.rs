@@ -289,6 +289,13 @@ impl<'a> Parser<'a> {
                         ParagraphItem::Bold(text)
                     }
                 }
+                "_" => {
+                    self.consume();
+                    let text = self.consume_until(|c| c == "_");
+                    self.consume();
+
+                    ParagraphItem::Italic(text)
+                }
                 "$" => {
                     self.consume();
                     let text = self.consume_until(|c| c == "$");
