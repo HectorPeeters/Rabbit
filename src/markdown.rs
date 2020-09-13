@@ -313,7 +313,7 @@ impl<'a> Parser<'a> {
                 }
                 _ => {
                     let text = self.consume_until(|c| {
-                        c == "<" || c == "*" || c == "$" || c == "[" || c == "`" || is_newline(c)
+                        c == "_" || c == "<" || c == "*" || c == "$" || c == "[" || c == "`" || is_newline(c)
                     });
                     ParagraphItem::Text(text)
                 }
