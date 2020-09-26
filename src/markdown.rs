@@ -60,7 +60,8 @@ impl ToHtml for MarkdownNode {
             }
             MarkdownNode::Math(math) => format!("<center>${}$</center><br>", math),
             MarkdownNode::Code(lang, code) => {
-                format!("<pre><code class=\"{}\">{}</code></pre>", lang, code)
+
+                format!("<pre><code class=\"{}\">{}</code></pre>", lang, code.replace("<", "&lt;").replace(">", "&gt;"))
             }
             MarkdownNode::Paragraph(children) => {
                 let mut result: String = String::default();
@@ -182,7 +183,7 @@ impl<'a> Parser<'a> {
 
         while !self.eof() && (self.peek(0) == "*" || self.peek(0) == "-") {
             self.consume();
-            nodes.push(self.next_node().expect("Failed to parse in list"));
+            nodes.push(self.next_node(true).expect("Failed to parse in list"));
             self.skip_whitespace();
         }
 
@@ -263,7 +264,7 @@ impl<'a> Parser<'a> {
         ParagraphItem::Image(url, alt_text)
     }
 
-    fn parse_paragraph(&mut self) -> Option<MarkdownNode> {
+    fn parse_paragraph(&mut self, single_line: bool) -> Option<MarkdownNode> {
         let mut result: Vec<ParagraphItem> = Vec::new();
 
         loop {
@@ -313,7 +314,13 @@ impl<'a> Parser<'a> {
                 }
                 _ => {
                     let text = self.consume_until(|c| {
-                        c == "_" || c == "<" || c == "*" || c == "$" || c == "[" || c == "`" || is_newline(c)
+                        c == "_"
+                            || c == "<"
+                            || c == "*"
+                            || c == "$"
+                            || c == "["
+                            || c == "`"
+                            || is_newline(c)
                     });
                     ParagraphItem::Text(text)
                 }
@@ -325,7 +332,7 @@ impl<'a> Parser<'a> {
         Some(MarkdownNode::Paragraph(result))
     }
 
-    pub fn next_node(&mut self) -> Option<MarkdownNode> {
+    pub fn next_node(&mut self, single_line: bool) -> Option<MarkdownNode> {
         self.skip_whitespace();
 
         if self.eof() {
@@ -342,7 +349,7 @@ impl<'a> Parser<'a> {
                 if current_char == "*" && self.peek(1) != "*" {
                     return self.parse_list();
                 }
-                self.parse_paragraph()
+                self.parse_paragraph(single_line)
             }
         };
 
@@ -353,7 +360,7 @@ impl<'a> Parser<'a> {
         let mut result = String::new();
 
         loop {
-            let node = self.next_node();
+            let node = self.next_node(false);
 
             match node {
                 Some(x) => result.push_str(x.to_html().as_str()),
@@ -369,6 +376,6 @@ impl Iterator for Parser<'_> {
     type Item = MarkdownNode;
 
     fn next(&mut self) -> Option<MarkdownNode> {
-        self.next_node()
+        self.next_node(false)
     }
 }

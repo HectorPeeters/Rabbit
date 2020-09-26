@@ -29,3 +29,6 @@ $ \beta = \frac{n \sum_{i} x_iy_i - (\sum_{i}x_i)(\sum_{i}y_i)}{n\sum_{i}x_i^2-(
 Slope estimate: $ \frac{\sum_{i=1}^n\frac{y_i}{x_i}}{n} $
 
 $ \frac{\overline{X}_n-\mu}{\frac{S_n}{\sqrt{n}}} $
+
+* List item $4 + 4$
+* List item **bold**

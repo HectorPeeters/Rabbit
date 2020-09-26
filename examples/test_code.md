@@ -36,6 +36,12 @@ public void captureScreen(String fileName) throws Exception {
    BufferedImage image = robot.createScreenCapture(screenRectangle);
    ImageIO.write(image, "png", new File(fileName));
 }
+
+public void test() {
+  for (int x = 0; x < 100; x++) {
+    System.out.println("Hello world!");
+  }
+}
 ```
 
 # HTML
