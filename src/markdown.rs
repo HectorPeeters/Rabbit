@@ -59,10 +59,11 @@ impl ToHtml for MarkdownNode {
                 result
             }
             MarkdownNode::Math(math) => format!("<center>${}$</center><br>", math),
-            MarkdownNode::Code(lang, code) => {
-
-                format!("<pre><code class=\"{}\">{}</code></pre>", lang, code.replace("<", "&lt;").replace(">", "&gt;"))
-            }
+            MarkdownNode::Code(lang, code) => format!(
+                "<pre><code class=\"{}\">{}</code></pre>",
+                lang,
+                code.replace("<", "&lt;").replace(">", "&gt;")
+            ),
             MarkdownNode::Paragraph(children) => {
                 let mut result: String = String::default();
 
@@ -264,7 +265,7 @@ impl<'a> Parser<'a> {
         ParagraphItem::Image(url, alt_text)
     }
 
-    fn parse_paragraph(&mut self, single_line: bool) -> Option<MarkdownNode> {
+    fn parse_paragraph(&mut self, _single_line: bool) -> Option<MarkdownNode> {
         let mut result: Vec<ParagraphItem> = Vec::new();
 
         loop {

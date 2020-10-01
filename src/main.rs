@@ -10,18 +10,44 @@ mod markdown;
 use markdown::*;
 
 fn compile_file(path: &str, output: &str, header: &String, footer: &String) {
-    println!("{}", path);
+    let path = Path::new(path);
 
-    if !Path::new(path).exists() {
+    println!("{:?}", path.file_name().unwrap());
+
+    if !path.exists() {
         panic!("Invalid input file");
     }
 
-    let markdown = fs::read_to_string(path).unwrap();
+    let html = if path.is_dir() {
+        let mut parsed = String::new();
 
-    let mut parser: Parser = Parser::new(&markdown);
+        let mut paths: Vec<_> = fs::read_dir(path).unwrap().map(|r| r.unwrap()).collect();
+        paths.sort_by_key(|dir| dir.path());
+
+        for entry in paths {
+            let entry_path = entry.path();
+
+            if entry_path.is_dir() {
+                continue;
+            }
+
+            if entry_path.extension().unwrap() == "md" {
+                println!("\t{:?}", entry_path.file_name().unwrap());
+                let markdown = fs::read_to_string(entry_path).unwrap();
+                let mut parser = Parser::new(&markdown);
+                parsed += &parser.to_html();
+            }
+        }
+
+        parsed
+    } else {
+        let markdown = fs::read_to_string(path).unwrap();
+        let mut parser = Parser::new(&markdown);
+        parser.to_html()
+    };
 
     let mut result = String::from(header);
-    result.push_str(parser.to_html().as_str());
+    result.push_str(html.as_str());
     result.push_str(&footer);
 
     fs::write(output, result).unwrap();
