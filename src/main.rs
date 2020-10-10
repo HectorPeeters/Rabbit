@@ -1,15 +1,15 @@
+use clap::{App, Arg};
 use notify::{watcher, RecursiveMode, Watcher};
 use std::fs;
 use std::path::Path;
 use std::time::Duration;
 use std::{thread, time};
-
-use clap::{App, Arg};
+use wkhtmltopdf::*;
 
 mod markdown;
 use markdown::*;
 
-fn compile_file(path: &str, output: &str, header: &String, footer: &String) {
+fn compile(path: &str, output: &str, header: &String, footer: &String, pdf: bool) {
     let path = Path::new(path);
 
     println!("{:?}", path.file_name().unwrap());
@@ -50,7 +50,19 @@ fn compile_file(path: &str, output: &str, header: &String, footer: &String) {
     result.push_str(html.as_str());
     result.push_str(&footer);
 
-    fs::write(output, result).unwrap();
+    if pdf {
+        let mut pdf_app = PdfApplication::new().expect("Failed to init PDF application");
+        let mut pdfout = pdf_app
+            .builder()
+            .orientation(Orientation::Portrait)
+            .margin(Size::Millimeters(25))
+            .title("Rabbit Output")
+            .build_from_html(&result)
+            .expect("Failed to build pdf");
+        pdfout.save(output).expect("Failed to save pdf file");
+    } else {
+        fs::write(output, result).unwrap();
+    }
 }
 
 fn main() {
@@ -60,6 +72,7 @@ fn main() {
         .about("Convert Markdown files into HTML!")
         .arg(Arg::with_name("input").required(true).index(1))
         .arg(Arg::with_name("output").short("o").takes_value(true))
+        .arg(Arg::with_name("pdf").short("p").takes_value(false))
         .arg(Arg::with_name("header").short("h").takes_value(true))
         .arg(Arg::with_name("footer").short("f").takes_value(true))
         .arg(Arg::with_name("watcher").short("w").takes_value(false))
@@ -77,7 +90,13 @@ fn main() {
     let input_file = matches.value_of("input").unwrap();
     let output_file = matches.value_of("output").unwrap_or("index.html");
 
-    compile_file(input_file, output_file, &header, &footer);
+    compile(
+        input_file,
+        output_file,
+        &header,
+        &footer,
+        matches.is_present("pdf"),
+    );
 
     if matches.is_present("watcher") {
         let (tx, rx) = std::sync::mpsc::channel();
@@ -92,7 +111,13 @@ fn main() {
             match rx.recv() {
                 Ok(_) => {
                     thread::sleep(time::Duration::from_millis(100));
-                    compile_file(input_file, output_file, &header, &footer);
+                    compile(
+                        input_file,
+                        output_file,
+                        &header,
+                        &footer,
+                        matches.is_present("pdf"),
+                    );
                     println!("Recompiled {}", input_file);
                 }
                 Err(err) => println!("watch error: {:?}", err),
