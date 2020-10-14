@@ -9,7 +9,14 @@ use wkhtmltopdf::*;
 mod markdown;
 use markdown::*;
 
-fn compile(path: &str, output: Option<&str>, header: &String, footer: &String, pdf: bool) {
+fn compile(
+    path: &str,
+    output: Option<&str>,
+    header: &String,
+    header_fast: &String,
+    footer: &String,
+    pdf: bool,
+) {
     let path = Path::new(path);
 
     println!("{:?}", path.file_name().unwrap());
@@ -35,7 +42,7 @@ fn compile(path: &str, output: Option<&str>, header: &String, footer: &String, p
                 println!("\t{:?}", entry_path.file_name().unwrap());
                 let markdown = fs::read_to_string(entry_path).unwrap();
                 let mut parser = Parser::new(&markdown);
-                parsed += &parser.to_html();
+                parsed += &parser.to_html(!pdf);
             }
         }
 
@@ -43,10 +50,14 @@ fn compile(path: &str, output: Option<&str>, header: &String, footer: &String, p
     } else {
         let markdown = fs::read_to_string(path).unwrap();
         let mut parser = Parser::new(&markdown);
-        parser.to_html()
+        parser.to_html(!pdf)
     };
 
-    let mut result = String::from(header);
+    let mut result = if pdf {
+        String::from(header)
+    } else {
+        String::from(header_fast)
+    };
     result.push_str(&html);
     result.push_str(&footer);
 
@@ -84,6 +95,7 @@ fn main() {
         .arg(Arg::with_name("output").short("o").takes_value(true))
         .arg(Arg::with_name("pdf").short("p").takes_value(false))
         .arg(Arg::with_name("header").short("h").takes_value(true))
+        .arg(Arg::with_name("header_fast").takes_value(true))
         .arg(Arg::with_name("footer").short("f").takes_value(true))
         .arg(Arg::with_name("watcher").short("w").takes_value(false))
         .get_matches();
@@ -91,6 +103,10 @@ fn main() {
     let header: String = match matches.value_of("header") {
         Some(x) => fs::read_to_string(x).expect("Failed to read header file"),
         None => String::from(include_str!("header.html")),
+    };
+    let header_fast: String = match matches.value_of("header_fast") {
+        Some(x) => fs::read_to_string(x).expect("Failed to read header file"),
+        None => String::from(include_str!("header_fast.html")),
     };
     let footer: String = match matches.value_of("footer") {
         Some(x) => fs::read_to_string(x).expect("Failed to read footer file"),
@@ -104,6 +120,7 @@ fn main() {
         input_file,
         output_file,
         &header,
+        &header_fast,
         &footer,
         matches.is_present("pdf"),
     );
@@ -125,6 +142,7 @@ fn main() {
                         input_file,
                         output_file,
                         &header,
+                        &header_fast,
                         &footer,
                         matches.is_present("pdf"),
                     );

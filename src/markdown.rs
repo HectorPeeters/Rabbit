@@ -30,17 +30,23 @@ pub struct Parser<'a> {
 }
 
 pub trait ToHtml {
-    fn to_html(&self) -> String;
+    fn to_html(&self, fast: bool) -> String;
 }
 
 impl ToHtml for ParagraphItem {
-    fn to_html(&self) -> String {
+    fn to_html(&self, fast: bool) -> String {
         match self {
             ParagraphItem::Text(text) => String::from(text),
             ParagraphItem::Italic(text) => format!("<em>{}</em>", text),
             ParagraphItem::Bold(text) => format!("<b>{}</b>", text),
             ParagraphItem::Url(name, url) => format!("<a href=\"{}\">{}</a>", url, name),
-            ParagraphItem::InlineMath(math) => tex_to_svg(math),
+            ParagraphItem::InlineMath(math) => {
+                if fast {
+                    format!("${}$", math)
+                } else {
+                    tex_to_svg(math)
+                }
+            }
             ParagraphItem::Image(url, alt_text) => {
                 format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
             }
@@ -59,19 +65,25 @@ fn tex_to_svg(input: &str) -> String {
 }
 
 impl ToHtml for MarkdownNode {
-    fn to_html(&self) -> String {
+    fn to_html(&self, fast: bool) -> String {
         match self {
             MarkdownNode::Header(text, level) => format!("<h{}>{}</h{}>", level, text, level),
             MarkdownNode::List(items) => {
                 let mut result: String = String::default();
                 result.push_str("<ul>");
                 for node in items {
-                    result.push_str(&format!("<li>{}</li>", node.to_html()));
+                    result.push_str(&format!("<li>{}</li>", node.to_html(fast)));
                 }
                 result.push_str("</ul>");
                 result
             }
-            MarkdownNode::Math(math) => format!("<center>{}</center>", tex_to_svg(math)),
+            MarkdownNode::Math(math) => {
+                if fast {
+                    format!("<center>${}$</center>", math)
+                } else {
+                    format!("<center>{}</center>", tex_to_svg(math))
+                }
+            }
             MarkdownNode::Code(lang, code) => {
                 let ss = SyntaxSet::load_defaults_newlines();
                 let ts = ThemeSet::load_defaults();
@@ -94,7 +106,7 @@ impl ToHtml for MarkdownNode {
                     result.push_str("<p>");
                 }
                 for child in children {
-                    result.push_str(child.to_html().as_str());
+                    result.push_str(child.to_html(fast).as_str());
                 }
                 if !single_line {
                     result.push_str("</p>");
@@ -384,14 +396,14 @@ impl<'a> Parser<'a> {
         result_node
     }
 
-    pub fn to_html(&mut self) -> String {
+    pub fn to_html(&mut self, fast: bool) -> String {
         let mut result = String::new();
 
         loop {
             let node = self.next_node(false);
 
             match node {
-                Some(x) => result.push_str(x.to_html().as_str()),
+                Some(x) => result.push_str(x.to_html(fast).as_str()),
                 None => break,
             }
         }
