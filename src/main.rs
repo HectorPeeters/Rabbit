@@ -47,7 +47,7 @@ fn compile(path: &str, output: &str, header: &String, footer: &String, pdf: bool
     };
 
     let mut result = String::from(header);
-    result.push_str(html.as_str());
+    result.push_str(&html);
     result.push_str(&footer);
 
     if pdf {

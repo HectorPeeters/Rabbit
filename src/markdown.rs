@@ -1,9 +1,12 @@
+use syntect::highlighting::{Color, ThemeSet};
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug)]
 pub enum MarkdownNode {
     Header(String, usize),
-    Paragraph(Vec<ParagraphItem>),
+    Paragraph(Vec<ParagraphItem>, bool),
     List(Vec<MarkdownNode>),
     Math(String),
     Code(String, String),
@@ -59,19 +62,29 @@ impl ToHtml for MarkdownNode {
                 result
             }
             MarkdownNode::Math(math) => format!("<center>${}$</center><br>", math),
-            MarkdownNode::Code(lang, code) => format!(
-                "<pre><code class=\"{}\">{}</code></pre>",
-                lang,
-                code.replace("<", "&lt;").replace(">", "&gt;")
-            ),
-            MarkdownNode::Paragraph(children) => {
+            MarkdownNode::Code(lang, code) => {
+                let ss = SyntaxSet::load_defaults_newlines();
+                let ts = ThemeSet::load_defaults();
+                let theme = &ts.themes["base16-ocean.dark"];
+                let syntax = ss
+                    .find_syntax_by_token(&lang.to_lowercase())
+                    .expect(&format!("Failed to load syntax for {}", lang));
+                let processed_code = code.replace("&lt;", "<").replace("&gt;", ">");
+
+                return highlighted_html_for_string(&processed_code, &ss, &syntax, theme);
+            }
+            MarkdownNode::Paragraph(children, single_line) => {
                 let mut result: String = String::default();
 
-                result.push_str("<p>");
+                if !single_line {
+                    result.push_str("<p>");
+                }
                 for child in children {
                     result.push_str(child.to_html().as_str());
                 }
-                result.push_str("</p>");
+                if !single_line {
+                    result.push_str("</p>");
+                }
 
                 result
             }
@@ -265,7 +278,7 @@ impl<'a> Parser<'a> {
         ParagraphItem::Image(url, alt_text)
     }
 
-    fn parse_paragraph(&mut self, _single_line: bool) -> Option<MarkdownNode> {
+    fn parse_paragraph(&mut self, single_line: bool) -> Option<MarkdownNode> {
         let mut result: Vec<ParagraphItem> = Vec::new();
 
         loop {
@@ -330,7 +343,7 @@ impl<'a> Parser<'a> {
             result.push(child);
         }
 
-        Some(MarkdownNode::Paragraph(result))
+        Some(MarkdownNode::Paragraph(result, single_line))
     }
 
     pub fn next_node(&mut self, single_line: bool) -> Option<MarkdownNode> {
