@@ -1,4 +1,5 @@
-use syntect::highlighting::{Color, ThemeSet};
+use std::process::Command;
+use syntect::highlighting::ThemeSet;
 use syntect::html::highlighted_html_for_string;
 use syntect::parsing::SyntaxSet;
 use unicode_segmentation::UnicodeSegmentation;
@@ -39,12 +40,21 @@ impl ToHtml for ParagraphItem {
             ParagraphItem::Italic(text) => format!("<em>{}</em>", text),
             ParagraphItem::Bold(text) => format!("<b>{}</b>", text),
             ParagraphItem::Url(name, url) => format!("<a href=\"{}\">{}</a>", url, name),
-            ParagraphItem::InlineMath(math) => format!("${}$", math),
+            ParagraphItem::InlineMath(math) => tex_to_svg(math),
             ParagraphItem::Image(url, alt_text) => {
                 format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
             }
             ParagraphItem::InlineCode(code) => format!("<code>{}</code>", code),
         }
+    }
+}
+
+fn tex_to_svg(input: &str) -> String {
+    let svg = Command::new("tex2svg").arg(input).output();
+
+    match svg {
+        Ok(x) => String::from_utf8(x.stdout).unwrap(),
+        Err(_) => String::from("<center>MATH PARSING ERROR</center>"),
     }
 }
 
@@ -61,7 +71,7 @@ impl ToHtml for MarkdownNode {
                 result.push_str("</ul>");
                 result
             }
-            MarkdownNode::Math(math) => format!("<center>${}$</center><br>", math),
+            MarkdownNode::Math(math) => tex_to_svg(math),
             MarkdownNode::Code(lang, code) => {
                 let ss = SyntaxSet::load_defaults_newlines();
                 let ts = ThemeSet::load_defaults();

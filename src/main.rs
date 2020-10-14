@@ -9,7 +9,7 @@ use wkhtmltopdf::*;
 mod markdown;
 use markdown::*;
 
-fn compile(path: &str, output: &str, header: &String, footer: &String, pdf: bool) {
+fn compile(path: &str, output: Option<&str>, header: &String, footer: &String, pdf: bool) {
     let path = Path::new(path);
 
     println!("{:?}", path.file_name().unwrap());
@@ -59,9 +59,15 @@ fn compile(path: &str, output: &str, header: &String, footer: &String, pdf: bool
             .title("Rabbit Output")
             .build_from_html(&result)
             .expect("Failed to build pdf");
-        pdfout.save(output).expect("Failed to save pdf file");
+        match output {
+            Some(x) => {pdfout.save(x).expect("Failed to save pdf file");},
+            None => {pdfout.save("output.pdf").expect("Failed to save pdf file");},
+        }
     } else {
-        fs::write(output, result).unwrap();
+        match output {
+            Some(x) => fs::write(x, result).unwrap(),
+            None => fs::write("output.html", result).unwrap(),
+        }
     }
 }
 
@@ -88,7 +94,7 @@ fn main() {
     };
 
     let input_file = matches.value_of("input").unwrap();
-    let output_file = matches.value_of("output").unwrap_or("index.html");
+    let output_file = matches.value_of("output");
 
     compile(
         input_file,
