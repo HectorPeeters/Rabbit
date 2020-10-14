@@ -60,8 +60,12 @@ fn compile(path: &str, output: Option<&str>, header: &String, footer: &String, p
             .build_from_html(&result)
             .expect("Failed to build pdf");
         match output {
-            Some(x) => {pdfout.save(x).expect("Failed to save pdf file");},
-            None => {pdfout.save("output.pdf").expect("Failed to save pdf file");},
+            Some(x) => {
+                pdfout.save(x).expect("Failed to save pdf file");
+            }
+            None => {
+                pdfout.save("output.pdf").expect("Failed to save pdf file");
+            }
         }
     } else {
         match output {

@@ -71,7 +71,7 @@ impl ToHtml for MarkdownNode {
                 result.push_str("</ul>");
                 result
             }
-            MarkdownNode::Math(math) => tex_to_svg(math),
+            MarkdownNode::Math(math) => format!("<center>{}</center>", tex_to_svg(math)),
             MarkdownNode::Code(lang, code) => {
                 let ss = SyntaxSet::load_defaults_newlines();
                 let ts = ThemeSet::load_defaults();
