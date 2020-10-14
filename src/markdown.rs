@@ -66,9 +66,13 @@ impl ToHtml for MarkdownNode {
                 let ss = SyntaxSet::load_defaults_newlines();
                 let ts = ThemeSet::load_defaults();
                 let theme = &ts.themes["base16-ocean.dark"];
-                let syntax = ss
-                    .find_syntax_by_token(&lang.to_lowercase())
-                    .expect(&format!("Failed to load syntax for {}", lang));
+
+                let syntax = if lang.trim().is_empty() {
+                    ss.find_syntax_plain_text()
+                } else {
+                    ss.find_syntax_by_token(&lang.to_lowercase())
+                        .expect(&format!("Failed to load syntax for {}", lang))
+                };
                 let processed_code = code.replace("&lt;", "<").replace("&gt;", ">");
 
                 return highlighted_html_for_string(&processed_code, &ss, &syntax, theme);
