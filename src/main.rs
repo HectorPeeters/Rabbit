@@ -12,9 +12,9 @@ use markdown::*;
 fn compile(
     path: &str,
     output: Option<&str>,
-    header: &String,
-    header_fast: &String,
-    footer: &String,
+    header: &str,
+    header_fast: &str,
+    footer: &str,
     pdf: bool,
 ) {
     let path = Path::new(path);
@@ -42,7 +42,7 @@ fn compile(
                 println!("\t{:?}", entry_path.file_name().unwrap());
                 let markdown = fs::read_to_string(entry_path).unwrap();
                 let mut parser = Parser::new(&markdown);
-                parsed += &parser.to_html(!pdf);
+                parsed += &parser.get_html(!pdf);
             }
         }
 
@@ -50,7 +50,7 @@ fn compile(
     } else {
         let markdown = fs::read_to_string(path).unwrap();
         let mut parser = Parser::new(&markdown);
-        parser.to_html(!pdf)
+        parser.get_html(!pdf)
     };
 
     let mut result = if pdf {

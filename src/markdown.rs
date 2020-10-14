@@ -97,7 +97,7 @@ impl ToHtml for MarkdownNode {
                 };
                 let processed_code = code.replace("&lt;", "<").replace("&gt;", ">");
 
-                return highlighted_html_for_string(&processed_code, &ss, &syntax, theme);
+                highlighted_html_for_string(&processed_code, &ss, &syntax, theme)
             }
             MarkdownNode::Paragraph(children, single_line) => {
                 let mut result: String = String::default();
@@ -396,7 +396,7 @@ impl<'a> Parser<'a> {
         result_node
     }
 
-    pub fn to_html(&mut self, fast: bool) -> String {
+    pub fn get_html(&mut self, fast: bool) -> String {
         let mut result = String::new();
 
         loop {
