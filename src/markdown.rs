@@ -299,11 +299,15 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            let curr = self.peek(0);
+            let mut curr = self.peek(0);
 
             if curr == "\n" || curr == "\r\n" {
                 break;
             }
+
+            self.skip_whitespace();
+
+            curr = self.peek(0);
 
             let child = match curr.as_str() {
                 "*" => {
@@ -350,13 +354,18 @@ impl<'a> Parser<'a> {
                             || c == "|"
                             || is_newline(c)
                     });
+                    //TODO: trim text here
                     ParagraphItem::Text(text)
                 }
             };
 
             result.push(child);
 
-            if single_line {break;}
+            self.skip_whitespace();
+
+            if single_line {
+                break;
+            }
         }
 
         Some(MarkdownNode::Paragraph(result))
