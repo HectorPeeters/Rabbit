@@ -7,6 +7,7 @@ pub enum MarkdownNode {
     List(Vec<MarkdownNode>),
     Math(String),
     Code(String, String),
+    Table(Vec<ParagraphItem>, Vec<ParagraphItem>)
 }
 
 #[derive(Debug)]
