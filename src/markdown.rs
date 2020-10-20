@@ -7,6 +7,7 @@ pub enum MarkdownNode {
     List(Vec<MarkdownNode>),
     Math(String),
     Code(String, String),
+    Table(Vec<MarkdownNode>, Vec<MarkdownNode>),
 }
 
 #[derive(Debug)]
@@ -74,6 +75,31 @@ impl ToHtml for MarkdownNode {
                 result.push_str("</p>");
 
                 result
+            }
+            MarkdownNode::Table(headers, data) => {
+                let mut header_html = String::default();
+
+                for header in headers {
+                    header_html += &format!("<th>{}</th>", header.to_html());
+                }
+
+                let mut data_html = String::new();
+                for i in 0..data.len() {
+                    if i % headers.len() == 0 {
+                        data_html += "<tr>";
+                    }
+
+                    data_html += &format!("<td>{}</td>", data[i].to_html());
+
+                    if i % headers.len() == headers.len() - 1 {
+                        data_html += "</tr>";
+                    }
+                }
+
+                format!(
+                    "<table><tr>{}</tr><tr>{}</tr></table>",
+                    header_html, data_html,
+                )
             }
         }
     }
@@ -265,7 +291,7 @@ impl<'a> Parser<'a> {
         ParagraphItem::Image(url, alt_text)
     }
 
-    fn parse_paragraph(&mut self, _single_line: bool) -> Option<MarkdownNode> {
+    fn parse_paragraph(&mut self, single_line: bool) -> Option<MarkdownNode> {
         let mut result: Vec<ParagraphItem> = Vec::new();
 
         loop {
@@ -273,11 +299,15 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            let curr = self.peek(0);
+            let mut curr = self.peek(0);
 
             if curr == "\n" || curr == "\r\n" {
                 break;
             }
+
+            self.skip_whitespace();
+
+            curr = self.peek(0);
 
             let child = match curr.as_str() {
                 "*" => {
@@ -321,16 +351,67 @@ impl<'a> Parser<'a> {
                             || c == "$"
                             || c == "["
                             || c == "`"
+                            || c == "|"
                             || is_newline(c)
                     });
+                    //TODO: trim text here
                     ParagraphItem::Text(text)
                 }
             };
 
             result.push(child);
+
+            self.skip_whitespace();
+
+            if single_line {
+                break;
+            }
         }
 
         Some(MarkdownNode::Paragraph(result))
+    }
+
+    fn parse_table(&mut self) -> Option<MarkdownNode> {
+        let mut headers: Vec<MarkdownNode> = vec![];
+
+        //TODO: replace all consume_chars("|") by assert_consume("|")
+
+        // Parse headers
+        self.consume_chars("|");
+        while !is_newline(self.peek(0)) {
+            headers.push(self.parse_paragraph(true).unwrap());
+
+            self.consume_chars("|");
+        }
+
+        self.skip_whitespace();
+
+        // Parse horizontal line
+        self.consume_chars("|");
+        while !is_newline(self.peek(0)) {
+            self.consume_until(|c| c != "-" && !is_whitespace(c));
+
+            self.consume_chars("|");
+        }
+
+        self.skip_whitespace();
+
+        // Parse data
+        let mut data: Vec<MarkdownNode> = vec![];
+
+        while !self.eof() && self.peek(0) == "|" {
+            self.consume_chars("|");
+
+            while !is_newline(self.peek(0)) {
+                data.push(self.parse_paragraph(true).unwrap());
+
+                self.consume_chars("|");
+            }
+
+            self.skip_whitespace();
+        }
+
+        Some(MarkdownNode::Table(headers, data))
     }
 
     pub fn next_node(&mut self, single_line: bool) -> Option<MarkdownNode> {
@@ -346,6 +427,7 @@ impl<'a> Parser<'a> {
             "$" => self.parse_math(),
             "`" => self.parse_code(),
             "-" => self.parse_list(),
+            "|" => self.parse_table(),
             _ => {
                 if current_char == "*" && self.peek(1) != "*" {
                     return self.parse_list();
