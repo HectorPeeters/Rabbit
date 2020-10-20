@@ -7,7 +7,7 @@ pub enum MarkdownNode {
     List(Vec<MarkdownNode>),
     Math(String),
     Code(String, String),
-    Table(Vec<ParagraphItem>, Vec<ParagraphItem>)
+    Table(Vec<ParagraphItem>, Vec<ParagraphItem>),
 }
 
 #[derive(Debug)]
@@ -75,6 +75,31 @@ impl ToHtml for MarkdownNode {
                 result.push_str("</p>");
 
                 result
+            }
+            MarkdownNode::Table(headers, data) => {
+                let mut header_html = String::default();
+
+                for header in headers {
+                    header_html += &format!("<th>{}</th>", header.to_html());
+                }
+
+                let mut data_html = String::new();
+                for i in 0..data.len() {
+                    if i % headers.len() == 0 {
+                        data_html += "<tr>";
+                    }
+
+                    data_html += &format!("<td>{}</td>", data[i].to_html());
+
+                    if i % headers.len() == headers.len() - 1 {
+                        data_html += "</tr>";
+                    }
+                }
+
+                format!(
+                    "<table><tr>{}</tr><tr>{}</tr></table>",
+                    header_html, data_html,
+                )
             }
         }
     }
