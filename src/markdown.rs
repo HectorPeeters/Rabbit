@@ -7,7 +7,7 @@ pub enum MarkdownNode {
     List(Vec<MarkdownNode>),
     Math(String),
     Code(String, String),
-    Table(Vec<ParagraphItem>, Vec<ParagraphItem>),
+    Table(Vec<MarkdownNode>, Vec<MarkdownNode>),
 }
 
 #[derive(Debug)]
@@ -291,7 +291,7 @@ impl<'a> Parser<'a> {
         ParagraphItem::Image(url, alt_text)
     }
 
-    fn parse_paragraph(&mut self, _single_line: bool) -> Option<MarkdownNode> {
+    fn parse_paragraph(&mut self, single_line: bool) -> Option<MarkdownNode> {
         let mut result: Vec<ParagraphItem> = Vec::new();
 
         loop {
@@ -347,6 +347,7 @@ impl<'a> Parser<'a> {
                             || c == "$"
                             || c == "["
                             || c == "`"
+                            || c == "|"
                             || is_newline(c)
                     });
                     ParagraphItem::Text(text)
@@ -354,9 +355,54 @@ impl<'a> Parser<'a> {
             };
 
             result.push(child);
+
+            if single_line {break;}
         }
 
         Some(MarkdownNode::Paragraph(result))
+    }
+
+    fn parse_table(&mut self) -> Option<MarkdownNode> {
+        let mut headers: Vec<MarkdownNode> = vec![];
+
+        //TODO: replace all consume_chars("|") by assert_consume("|")
+
+        // Parse headers
+        self.consume_chars("|");
+        while !is_newline(self.peek(0)) {
+            headers.push(self.parse_paragraph(true).unwrap());
+
+            self.consume_chars("|");
+        }
+
+        self.skip_whitespace();
+
+        // Parse horizontal line
+        self.consume_chars("|");
+        while !is_newline(self.peek(0)) {
+            self.consume_until(|c| c != "-" && !is_whitespace(c));
+
+            self.consume_chars("|");
+        }
+
+        self.skip_whitespace();
+
+        // Parse data
+        let mut data: Vec<MarkdownNode> = vec![];
+
+        while !self.eof() && self.peek(0) == "|" {
+            self.consume_chars("|");
+
+            while !is_newline(self.peek(0)) {
+                data.push(self.parse_paragraph(true).unwrap());
+
+                self.consume_chars("|");
+            }
+
+            self.skip_whitespace();
+        }
+
+        Some(MarkdownNode::Table(headers, data))
     }
 
     pub fn next_node(&mut self, single_line: bool) -> Option<MarkdownNode> {
@@ -372,6 +418,7 @@ impl<'a> Parser<'a> {
             "$" => self.parse_math(),
             "`" => self.parse_code(),
             "-" => self.parse_list(),
+            "|" => self.parse_table(),
             _ => {
                 if current_char == "*" && self.peek(1) != "*" {
                     return self.parse_list();
