@@ -258,7 +258,7 @@ impl<'a> Parser<'a> {
 
         while !self.eof() && (self.peek(0) == "*" || self.peek(0) == "-") {
             self.consume();
-            nodes.push(self.next_node(true).expect("Failed to parse in list"));
+            nodes.push(self.parse_paragraph(true).expect("Failed to parse in list"));
             self.skip_whitespace();
         }
 
@@ -368,7 +368,11 @@ impl<'a> Parser<'a> {
                 }
                 "_" => {
                     self.consume();
-                    let text = self.consume_until(|c| c == "_");
+                    let text = if single_line {
+                        self.consume_until(|c| c == "_" || is_newline(c))
+                    } else {
+                        self.consume_until(|c| c == "_")
+                    };
                     self.consume();
 
                     ParagraphItem::Italic(text)
