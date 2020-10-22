@@ -35,11 +35,11 @@ pub struct Parser<'a> {
 }
 
 pub trait ToHtml {
-    fn to_html(&self, fast: bool) -> String;
+    fn to_html(&self, base_path: &Path, fast: bool) -> String;
 }
 
 impl ToHtml for ParagraphItem {
-    fn to_html(&self, fast: bool) -> String {
+    fn to_html(&self, base_path: &Path, fast: bool) -> String {
         match self {
             ParagraphItem::Text(text) => String::from(text),
             ParagraphItem::Italic(text) => format!("<em>{}</em>", text),
@@ -60,8 +60,8 @@ impl ToHtml for ParagraphItem {
                         return format!("<img src=\"{}\" alt=\"{}\">", url, alt_text);
                     }
 
-                    let mut f = File::open(&url).expect("no file found");
-                    let metadata = fs::metadata(&url).expect("unable to read metadata");
+                    let mut f = File::open(base_path.join(url)).expect("no file found");
+                    let metadata = fs::metadata(base_path.join(url)).expect("unable to read metadata");
                     let mut buffer = vec![0; metadata.len() as usize];
                     f.read_exact(&mut buffer).expect("buffer overflow");
                     let image_data = base64::encode(buffer);
@@ -100,14 +100,14 @@ fn tex_to_svg(input: &str, inline: bool) -> String {
 }
 
 impl ToHtml for MarkdownNode {
-    fn to_html(&self, fast: bool) -> String {
+    fn to_html(&self, base_path: &Path, fast: bool) -> String {
         match self {
             MarkdownNode::Header(text, level) => format!("<h{}>{}</h{}>", level, text, level),
             MarkdownNode::List(items) => {
                 let mut result: String = String::default();
                 result.push_str("<ul>");
                 for node in items {
-                    result.push_str(&format!("<li>{}</li>", node.to_html(fast)));
+                    result.push_str(&format!("<li>{}</li>", node.to_html(base_path, fast)));
                 }
                 result.push_str("</ul>");
                 result
@@ -141,7 +141,7 @@ impl ToHtml for MarkdownNode {
                     result.push_str("<p>");
                 }
                 for child in children {
-                    result.push_str(child.to_html(fast).as_str());
+                    result.push_str(child.to_html(base_path, fast).as_str());
                 }
                 if !single_line {
                     result.push_str("</p>");
@@ -436,14 +436,14 @@ impl<'a> Parser<'a> {
         result_node
     }
 
-    pub fn get_html(&mut self, fast: bool) -> String {
+    pub fn get_html(&mut self, base_path: &Path, fast: bool) -> String {
         let mut result = String::new();
 
         loop {
             let node = self.next_node(false);
 
             match node {
-                Some(x) => result.push_str(x.to_html(fast).as_str()),
+                Some(x) => result.push_str(x.to_html(base_path, fast).as_str()),
                 None => break,
             }
         }

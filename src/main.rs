@@ -42,7 +42,7 @@ fn compile(
                 println!("\t{:?}", entry_path.file_name().unwrap());
                 let markdown = fs::read_to_string(entry_path).unwrap();
                 let mut parser = Parser::new(&markdown);
-                parsed += &parser.get_html(!pdf);
+                parsed += &parser.get_html(path, !pdf);
             }
         }
 
@@ -50,7 +50,7 @@ fn compile(
     } else {
         let markdown = fs::read_to_string(path).unwrap();
         let mut parser = Parser::new(&markdown);
-        parser.get_html(!pdf)
+        parser.get_html(path.parent().unwrap(), !pdf)
     };
 
     let mut result = if pdf {
@@ -58,6 +58,7 @@ fn compile(
     } else {
         String::from(header_fast)
     };
+
     result.push_str(&html);
     result.push_str(&footer);
 
