@@ -49,7 +49,7 @@ impl ToHtml for ParagraphItem {
                 if fast {
                     format!("${}$", math)
                 } else {
-                    tex_to_svg(math)
+                    tex_to_svg(math, true)
                 }
             }
             ParagraphItem::Image(url, alt_text) => {
@@ -63,7 +63,7 @@ impl ToHtml for ParagraphItem {
                     let mut f = File::open(&url).expect("no file found");
                     let metadata = fs::metadata(&url).expect("unable to read metadata");
                     let mut buffer = vec![0; metadata.len() as usize];
-                    f.read(&mut buffer).expect("buffer overflow");
+                    f.read_exact(&mut buffer).expect("buffer overflow");
                     let image_data = base64::encode(buffer);
 
                     let extension = Path::new(url)
@@ -82,12 +82,20 @@ impl ToHtml for ParagraphItem {
     }
 }
 
-fn tex_to_svg(input: &str) -> String {
-    let svg = Command::new("tex2svg").arg(input).output();
+fn tex_to_svg(input: &str, inline: bool) -> String {
+    let mut command = Command::new("tex2svg");
+    command.arg(input);
 
-    match svg {
+    if inline {
+        command.arg("--inline");
+    }
+
+    match command.output() {
         Ok(x) => String::from_utf8(x.stdout).unwrap(),
-        Err(_) => String::from("<center>MATH PARSING ERROR</center>"),
+        Err(_) => {
+            eprintln!("Failed to parse math: ${}$", input);
+            String::from("<center>MATH PARSING ERROR</center>")
+        }
     }
 }
 
@@ -108,7 +116,7 @@ impl ToHtml for MarkdownNode {
                 if fast {
                     format!("<center>${}$</center>", math)
                 } else {
-                    format!("<center>{}</center>", tex_to_svg(math))
+                    format!("<center>{}</center>", tex_to_svg(math, false))
                 }
             }
             MarkdownNode::Code(lang, code) => {
@@ -282,10 +290,11 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        let mut lang = String::default();
-        if !is_newline(self.peek(0)) {
-            lang = self.consume_until(is_newline).trim().to_lowercase();
-        }
+        let lang = if !is_newline(self.peek(0)) {
+            self.consume_until(is_newline).trim().to_lowercase()
+        } else {
+            String::default()
+        };
 
         let mut code = String::from(self.consume_until(|c| c == "`").trim());
 
