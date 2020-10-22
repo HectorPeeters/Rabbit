@@ -1,3 +1,8 @@
+use std::ffi::OsStr;
+use std::fs;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use std::process::Command;
 use syntect::highlighting::ThemeSet;
 use syntect::html::highlighted_html_for_string;
@@ -48,7 +53,32 @@ impl ToHtml for ParagraphItem {
                 }
             }
             ParagraphItem::Image(url, alt_text) => {
-                format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
+                if fast {
+                    format!(
+                        "<img src=\"{}\" alt=\"{}\">", url, alt_text
+                    )
+                } else {
+                    //TODO: fix this
+                    if url.starts_with("www.") {
+                        return format!("<img src=\"{}\" alt=\"{}\">", url, alt_text);
+                    }
+
+                    let mut f = File::open(&url).expect("no file found");
+                    let metadata = fs::metadata(&url).expect("unable to read metadata");
+                    let mut buffer = vec![0; metadata.len() as usize];
+                    f.read(&mut buffer).expect("buffer overflow");
+                    let image_data = base64::encode(buffer);
+
+                    let extension = Path::new(url)
+                        .extension()
+                        .and_then(OsStr::to_str)
+                        .expect("Failed to get file extension");
+
+                    format!(
+                        "<img src=\"data:image/{};base64,{}\" alt=\"{}\">",
+                        extension, image_data, alt_text
+                    )
+                }
             }
             ParagraphItem::InlineCode(code) => format!("<code>{}</code>", code),
         }
