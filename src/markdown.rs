@@ -54,12 +54,9 @@ impl ToHtml for ParagraphItem {
             }
             ParagraphItem::Image(url, alt_text) => {
                 if fast {
-                    format!(
-                        "<img src=\"{}\" alt=\"{}\">", url, alt_text
-                    )
+                    format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
                 } else {
-                    //TODO: fix this
-                    if url.starts_with("www.") {
+                    if url.contains("www.") || url.contains("http://") {
                         return format!("<img src=\"{}\" alt=\"{}\">", url, alt_text);
                     }
 
