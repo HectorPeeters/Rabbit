@@ -62,7 +62,8 @@ impl ToHtml for ParagraphItem {
                     }
 
                     let mut f = File::open(base_path.join(url)).expect("no file found");
-                    let metadata = fs::metadata(base_path.join(url)).expect("unable to read metadata");
+                    let metadata =
+                        fs::metadata(base_path.join(url)).expect("unable to read metadata");
                     let mut buffer = vec![0; metadata.len() as usize];
                     f.read_exact(&mut buffer).expect("buffer overflow");
                     let image_data = base64::encode(buffer);
@@ -154,7 +155,7 @@ impl ToHtml for MarkdownNode {
                 let mut header_html = String::default();
 
                 for header in headers {
-                    header_html += &format!("<th>{}</th>", header.to_html());
+                    header_html += &format!("<th>{}</th>", header.to_html(base_path, fast));
                 }
 
                 let mut data_html = String::new();
@@ -163,7 +164,7 @@ impl ToHtml for MarkdownNode {
                         data_html += "<tr>";
                     }
 
-                    data_html += &format!("<td>{}</td>", data[i].to_html());
+                    data_html += &format!("<td>{}</td>", data[i].to_html(base_path, fast));
 
                     if i % headers.len() == headers.len() - 1 {
                         data_html += "</tr>";
@@ -374,15 +375,11 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            let mut curr = self.peek(0);
+            let curr = self.peek(0);
 
             if curr == "\n" || curr == "\r\n" {
                 break;
             }
-
-            self.skip_whitespace();
-
-            curr = self.peek(0);
 
             let child = match curr.as_str() {
                 "*" => {
@@ -439,12 +436,6 @@ impl<'a> Parser<'a> {
             };
 
             result.push(child);
-
-            self.skip_whitespace();
-
-            if single_line {
-                break;
-            }
         }
 
         Some(MarkdownNode::Paragraph(result, single_line))
