@@ -375,6 +375,8 @@ impl<'a> Parser<'a> {
                 break;
             }
 
+            self.consume_until(|c| c != " " && c != "\t");
+
             let curr = self.peek(0);
 
             if curr == "\n" || curr == "\r\n" {
@@ -436,6 +438,10 @@ impl<'a> Parser<'a> {
             };
 
             result.push(child);
+
+            if single_line {
+                break;
+            }
         }
 
         Some(MarkdownNode::Paragraph(result, single_line))
