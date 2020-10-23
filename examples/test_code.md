@@ -2,6 +2,12 @@
 
 Demo of code highlighting
 
+# Text
+
+```
+test code
+```
+
 # Rust
 
 ```Rust

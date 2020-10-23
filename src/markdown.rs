@@ -1,9 +1,18 @@
+use std::ffi::OsStr;
+use std::fs;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
+use std::process::Command;
+use syntect::highlighting::ThemeSet;
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug)]
 pub enum MarkdownNode {
     Header(String, usize),
-    Paragraph(Vec<ParagraphItem>),
+    Paragraph(Vec<ParagraphItem>, bool),
     List(Vec<MarkdownNode>),
     Math(String),
     Code(String, String),
@@ -27,52 +36,117 @@ pub struct Parser<'a> {
 }
 
 pub trait ToHtml {
-    fn to_html(&self) -> String;
+    fn to_html(&self, base_path: &Path, fast: bool) -> String;
 }
 
 impl ToHtml for ParagraphItem {
-    fn to_html(&self) -> String {
+    fn to_html(&self, base_path: &Path, fast: bool) -> String {
         match self {
             ParagraphItem::Text(text) => String::from(text),
             ParagraphItem::Italic(text) => format!("<em>{}</em>", text),
             ParagraphItem::Bold(text) => format!("<b>{}</b>", text),
             ParagraphItem::Url(name, url) => format!("<a href=\"{}\">{}</a>", url, name),
-            ParagraphItem::InlineMath(math) => format!("${}$", math),
+            ParagraphItem::InlineMath(math) => {
+                if fast {
+                    format!("${}$", math)
+                } else {
+                    tex_to_svg(math, true)
+                }
+            }
             ParagraphItem::Image(url, alt_text) => {
-                format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
+                if fast {
+                    format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
+                } else {
+                    if url.contains("www.") || url.contains("http://") {
+                        return format!("<img src=\"{}\" alt=\"{}\">", url, alt_text);
+                    }
+
+                    let mut f = File::open(base_path.join(url)).expect("no file found");
+                    let metadata = fs::metadata(base_path.join(url)).expect("unable to read metadata");
+                    let mut buffer = vec![0; metadata.len() as usize];
+                    f.read_exact(&mut buffer).expect("buffer overflow");
+                    let image_data = base64::encode(buffer);
+
+                    let extension = Path::new(url)
+                        .extension()
+                        .and_then(OsStr::to_str)
+                        .expect("Failed to get file extension");
+
+                    format!(
+                        "<img src=\"data:image/{};base64,{}\" alt=\"{}\">",
+                        extension, image_data, alt_text
+                    )
+                }
             }
             ParagraphItem::InlineCode(code) => format!("<code>{}</code>", code),
         }
     }
 }
 
+fn tex_to_svg(input: &str, inline: bool) -> String {
+    let mut command = Command::new("tex2svg");
+    command.arg(input);
+
+    if inline {
+        command.arg("--inline");
+    }
+
+    match command.output() {
+        Ok(x) => String::from_utf8(x.stdout).unwrap(),
+        Err(_) => {
+            eprintln!("Failed to parse math: ${}$", input);
+            String::from("<center>MATH PARSING ERROR</center>")
+        }
+    }
+}
+
 impl ToHtml for MarkdownNode {
-    fn to_html(&self) -> String {
+    fn to_html(&self, base_path: &Path, fast: bool) -> String {
         match self {
             MarkdownNode::Header(text, level) => format!("<h{}>{}</h{}>", level, text, level),
             MarkdownNode::List(items) => {
                 let mut result: String = String::default();
                 result.push_str("<ul>");
                 for node in items {
-                    result.push_str(&format!("<li>{}</li>", node.to_html()));
+                    result.push_str(&format!("<li>{}</li>", node.to_html(base_path, fast)));
                 }
                 result.push_str("</ul>");
                 result
             }
-            MarkdownNode::Math(math) => format!("<center>${}$</center><br>", math),
-            MarkdownNode::Code(lang, code) => format!(
-                "<pre><code class=\"{}\">{}</code></pre>",
-                lang,
-                code.replace("<", "&lt;").replace(">", "&gt;")
-            ),
-            MarkdownNode::Paragraph(children) => {
+            MarkdownNode::Math(math) => {
+                if fast {
+                    format!("<center>${}$</center>", math)
+                } else {
+                    format!("<center>{}</center>", tex_to_svg(math, false))
+                }
+            }
+            MarkdownNode::Code(lang, code) => {
+                let ss = SyntaxSet::load_defaults_newlines();
+                let ts = ThemeSet::load_defaults();
+                let theme = &ts.themes["base16-ocean.dark"];
+
+                let syntax = if lang.trim().is_empty() {
+                    ss.find_syntax_plain_text()
+                } else {
+                    ss.find_syntax_by_token(&lang.to_lowercase())
+                        .expect(&format!("Failed to load syntax for {}", lang))
+                };
+                let processed_code = code.replace("&lt;", "<").replace("&gt;", ">");
+
+                highlighted_html_for_string(&processed_code, &ss, &syntax, theme)
+            }
+            MarkdownNode::Paragraph(children, single_line) => {
                 let mut result: String = String::default();
 
-                result.push_str("<p>");
-                for child in children {
-                    result.push_str(child.to_html().as_str());
+                if !single_line {
+                    result.push_str("<p>");
                 }
-                result.push_str("</p>");
+                for child in children {
+                    result.push_str(child.to_html(base_path, fast).as_str());
+                }
+                if !single_line {
+                    result.push_str("</p>");
+                }
 
                 result
             }
@@ -210,7 +284,7 @@ impl<'a> Parser<'a> {
 
         while !self.eof() && (self.peek(0) == "*" || self.peek(0) == "-") {
             self.consume();
-            nodes.push(self.next_node(true).expect("Failed to parse in list"));
+            nodes.push(self.parse_paragraph(true).expect("Failed to parse in list"));
             self.skip_whitespace();
         }
 
@@ -242,10 +316,11 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        let mut lang = String::default();
-        if !is_newline(self.peek(0)) {
-            lang = self.consume_until(is_newline).trim().to_lowercase();
-        }
+        let lang = if !is_newline(self.peek(0)) {
+            self.consume_until(is_newline).trim().to_lowercase()
+        } else {
+            String::default()
+        };
 
         let mut code = String::from(self.consume_until(|c| c == "`").trim());
 
@@ -323,7 +398,11 @@ impl<'a> Parser<'a> {
                 }
                 "_" => {
                     self.consume();
-                    let text = self.consume_until(|c| c == "_");
+                    let text = if single_line {
+                        self.consume_until(|c| c == "_" || is_newline(c))
+                    } else {
+                        self.consume_until(|c| c == "_")
+                    };
                     self.consume();
 
                     ParagraphItem::Italic(text)
@@ -368,7 +447,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Some(MarkdownNode::Paragraph(result))
+        Some(MarkdownNode::Paragraph(result, single_line))
     }
 
     fn parse_table(&mut self) -> Option<MarkdownNode> {
@@ -439,14 +518,14 @@ impl<'a> Parser<'a> {
         result_node
     }
 
-    pub fn to_html(&mut self) -> String {
+    pub fn get_html(&mut self, base_path: &Path, fast: bool) -> String {
         let mut result = String::new();
 
         loop {
             let node = self.next_node(false);
 
             match node {
-                Some(x) => result.push_str(x.to_html().as_str()),
+                Some(x) => result.push_str(x.to_html(base_path, fast).as_str()),
                 None => break,
             }
         }

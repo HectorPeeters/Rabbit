@@ -8,9 +8,9 @@ edition = "2018"
 path = "src/lib.rs"
 
 [dependencies]
-# markdown = "0.2.0"
-# syntect = "4.2"
 unicode-segmentation = "1.6.0"
-# katex = "0.2.1"
 clap = "2.33.1"
 notify = "4.0.12"
+wkhtmltopdf = "0.3.0"
+syntect = "4.4.0"
+base64 = "0.13.0"
