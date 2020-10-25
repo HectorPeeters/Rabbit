@@ -375,7 +375,7 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            self.consume_until(|c| c != " " && c != "\t");
+            self.consume_until(|c| !is_whitespace(c));
 
             let curr = self.peek(0);
 
@@ -439,7 +439,8 @@ impl<'a> Parser<'a> {
 
             result.push(child);
 
-            if single_line {
+            //TODO: dirty fix this should be changed
+            if single_line && self.peek(0) == "|" {
                 break;
             }
         }
