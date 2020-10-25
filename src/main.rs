@@ -4,6 +4,8 @@ use std::fs;
 use std::path::Path;
 use std::time::Duration;
 use std::{thread, time};
+
+#[cfg(feature = "pdf")]
 use wkhtmltopdf::*;
 
 mod markdown;
@@ -63,22 +65,28 @@ fn compile(
     result.push_str(&footer);
 
     if pdf {
-        let mut pdf_app = PdfApplication::new().expect("Failed to init PDF application");
-        let mut pdfout = pdf_app
-            .builder()
-            .orientation(Orientation::Portrait)
-            .margin(Size::Millimeters(25))
-            .title("Rabbit Output")
-            .build_from_html(&result)
-            .expect("Failed to build pdf");
-        match output {
-            Some(x) => {
-                pdfout.save(x).expect("Failed to save pdf file");
-            }
-            None => {
-                pdfout.save("output.pdf").expect("Failed to save pdf file");
+        #[cfg(feature = "pdf")]
+        {
+            let mut pdf_app = PdfApplication::new().expect("Failed to init PDF application");
+            let mut pdfout = pdf_app
+                .builder()
+                .orientation(Orientation::Portrait)
+                .margin(Size::Millimeters(25))
+                .title("Rabbit Output")
+                .build_from_html(&result)
+                .expect("Failed to build pdf");
+            match output {
+                Some(x) => {
+                    pdfout.save(x).expect("Failed to save pdf file");
+                }
+                None => {
+                    pdfout.save("output.pdf").expect("Failed to save pdf file");
+                }
             }
         }
+
+        #[cfg(not(feature = "pdf"))]
+        panic!("Not built for pdf export! Build with '--features \"pdf\"'");
     } else {
         match output {
             Some(x) => fs::write(x, result).unwrap(),
