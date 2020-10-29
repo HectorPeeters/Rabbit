@@ -17,6 +17,7 @@ pub enum MarkdownNode {
     Math(String),
     Code(String, String),
     Table(Vec<MarkdownNode>, Vec<MarkdownNode>),
+    PageBreak(),
 }
 
 #[derive(Debug)]
@@ -176,6 +177,7 @@ impl ToHtml for MarkdownNode {
                     header_html, data_html,
                 )
             }
+            MarkdownNode::PageBreak() => String::from("<p style=\"page-break-after: always;\"</p>"),
         }
     }
 }
@@ -375,7 +377,7 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            self.consume_until(|c| !is_whitespace(c));
+            //     self.consume_until(|c| !is_whitespace(c));
 
             let curr = self.peek(0);
 
@@ -505,6 +507,10 @@ impl<'a> Parser<'a> {
             "`" => self.parse_code(),
             "-" => self.parse_list(),
             "|" => self.parse_table(),
+            "@" => {
+                self.consume();
+                Some(MarkdownNode::PageBreak())
+            }
             _ => {
                 if current_char == "*" && self.peek(1) != "*" {
                     return self.parse_list();
