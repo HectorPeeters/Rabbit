@@ -58,7 +58,7 @@ impl ToHtml for ParagraphItem {
                 if fast {
                     format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
                 } else {
-                    if url.contains("www.") || url.contains("http://") {
+                    if url.contains("www.") || url.contains("http://") || url.contains("https://"){
                         return format!("<img src=\"{}\" alt=\"{}\">", url, alt_text);
                     }
 
