@@ -10,6 +10,7 @@ use wkhtmltopdf::*;
 
 mod markdown;
 use markdown::*;
+mod parser;
 
 fn compile(
     path: &str,
@@ -42,17 +43,13 @@ fn compile(
 
             if entry_path.extension().unwrap() == "md" {
                 println!("\t{:?}", entry_path.file_name().unwrap());
-                let markdown = fs::read_to_string(entry_path).unwrap();
-                let mut parser = Parser::new(&markdown);
-                parsed += &parser.get_html(path, !pdf);
+                parsed += &convert_to_html(path.to_str().unwrap(), !pdf);
             }
         }
 
         parsed
     } else {
-        let markdown = fs::read_to_string(path).unwrap();
-        let mut parser = Parser::new(&markdown);
-        parser.get_html(path.parent().unwrap(), !pdf)
+        convert_to_html(path.parent().unwrap().to_str().unwrap(), !pdf)
     };
 
     let mut result = if pdf {

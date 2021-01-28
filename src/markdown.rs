@@ -1,3 +1,4 @@
+use crate::parser::Parser;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
@@ -7,7 +8,6 @@ use std::process::Command;
 use syntect::highlighting::ThemeSet;
 use syntect::html::highlighted_html_for_string;
 use syntect::parsing::SyntaxSet;
-use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug)]
 pub enum MarkdownNode {
@@ -31,17 +31,12 @@ pub enum ParagraphItem {
     InlineCode(String),
 }
 
-pub struct Parser<'a> {
-    data: Vec<&'a str>,
-    index: usize,
-}
-
 pub trait ToHtml {
-    fn to_html(&self, base_path: &Path, fast: bool) -> String;
+    fn to_html(&self, base_path: &str, fast: bool) -> String;
 }
 
 impl ToHtml for ParagraphItem {
-    fn to_html(&self, base_path: &Path, fast: bool) -> String {
+    fn to_html(&self, base_path: &str, fast: bool) -> String {
         match self {
             ParagraphItem::Text(text) => String::from(text),
             ParagraphItem::Italic(text) => format!("<em>{}</em>", text),
@@ -58,13 +53,14 @@ impl ToHtml for ParagraphItem {
                 if fast {
                     format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
                 } else {
-                    if url.contains("www.") || url.contains("http://") || url.contains("https://"){
+                    if url.contains("www.") || url.contains("http://") || url.contains("https://") {
                         return format!("<img src=\"{}\" alt=\"{}\">", url, alt_text);
                     }
 
-                    let mut f = File::open(base_path.join(url)).expect("no file found");
-                    let metadata =
-                        fs::metadata(base_path.join(url)).expect("unable to read metadata");
+                    let full_path = Path::new(base_path).join(url);
+
+                    let mut f = File::open(&full_path).expect("no file found");
+                    let metadata = fs::metadata(&full_path).expect("unable to read metadata");
                     let mut buffer = vec![0; metadata.len() as usize];
                     f.read_exact(&mut buffer).expect("buffer overflow");
                     let image_data = base64::encode(buffer);
@@ -103,7 +99,7 @@ fn tex_to_svg(input: &str, inline: bool) -> String {
 }
 
 impl ToHtml for MarkdownNode {
-    fn to_html(&self, base_path: &Path, fast: bool) -> String {
+    fn to_html(&self, base_path: &str, fast: bool) -> String {
         match self {
             MarkdownNode::Header(text, level) => format!("<h{}>{}</h{}>", level, text, level),
             MarkdownNode::List(items) => {
@@ -182,366 +178,17 @@ impl ToHtml for MarkdownNode {
     }
 }
 
-fn is_whitespace(string: String) -> bool {
-    string == " " || string == "\t"
-}
+pub fn convert_to_html(path: &str, fast: bool) -> String {
+    let mut result = String::new();
 
-fn is_newline(string: String) -> bool {
-    string == "\r\n" || string == "\n"
-}
+    let markdown = std::fs::read_to_string(path).unwrap();
 
-fn preprocess_html(string: String) -> String {
-    string.replace("<", "&lt;").replace(">", "&gt;")
-}
+    let mut parser = Parser::new(&markdown);
 
-impl<'a> Parser<'a> {
-    pub fn new(input: &'a str) -> Self {
-        Parser {
-            data: UnicodeSegmentation::graphemes(input, true).collect::<Vec<&str>>(),
-            index: 0,
-        }
+    for node in parser {
+        result.push_str(node.to_html(path, fast).as_str())
     }
 
-    fn eof(&mut self) -> bool {
-        self.index >= self.data.len()
-    }
 
-    fn peek(&mut self, index: usize) -> String {
-        self.data[self.index + index].to_owned()
-    }
-
-    fn consume(&mut self) -> &str {
-        let result = self.data[self.index];
-        self.index += 1;
-        result
-    }
-
-    fn go_back(&mut self, count: usize) {
-        self.index -= count;
-    }
-
-    fn consume_chars(&mut self, character: &str) -> String {
-        let mut result = String::default();
-
-        loop {
-            if self.eof() {
-                break;
-            }
-
-            let c = self.peek(0);
-
-            if c != character {
-                break;
-            }
-
-            result.push_str(self.consume());
-        }
-
-        result
-    }
-
-    fn consume_until(&mut self, f: fn(String) -> bool) -> String {
-        let mut result = String::default();
-
-        loop {
-            if self.eof() {
-                break;
-            }
-
-            let c = self.peek(0);
-
-            if f(c) {
-                break;
-            }
-
-            result.push_str(self.consume());
-        }
-
-        result
-    }
-
-    fn skip_whitespace(&mut self) {
-        self.consume_until(|c| c != " " && c != "\t" && c != "\n" && c != "\r\n");
-    }
-
-    fn parse_header(&mut self) -> Option<MarkdownNode> {
-        let hashtags = self.consume_chars("#");
-
-        if !is_whitespace(self.peek(0)) {
-            self.go_back(hashtags.len());
-            return None;
-        }
-
-        self.consume();
-        let header_name = String::from(self.consume_until(is_newline).trim());
-
-        Some(MarkdownNode::Header(header_name, hashtags.len()))
-    }
-
-    fn parse_list(&mut self) -> Option<MarkdownNode> {
-        let mut nodes: Vec<MarkdownNode> = Vec::new();
-
-        if !is_whitespace(self.peek(1)) {
-            return None;
-        }
-
-        while !self.eof() && (self.peek(0) == "*" || self.peek(0) == "-") {
-            self.consume();
-            nodes.push(self.parse_paragraph(true).expect("Failed to parse in list"));
-            self.skip_whitespace();
-        }
-
-        Some(MarkdownNode::List(nodes))
-    }
-
-    fn parse_math(&mut self) -> Option<MarkdownNode> {
-        self.consume_chars("$");
-
-        let math = String::from(self.consume_until(|c| c == "$").trim());
-        self.consume_until(|c| c != "$");
-
-        Some(MarkdownNode::Math(math))
-    }
-
-    fn parse_url(&mut self) -> ParagraphItem {
-        self.consume();
-
-        let url = self.consume_until(|c| c == ">");
-        let name = url.clone();
-
-        self.consume();
-
-        ParagraphItem::Url(name, url)
-    }
-
-    fn parse_code(&mut self) -> Option<MarkdownNode> {
-        if self.consume_chars("`").len() != 3 {
-            return None;
-        }
-
-        let lang = if !is_newline(self.peek(0)) {
-            self.consume_until(is_newline).trim().to_lowercase()
-        } else {
-            String::default()
-        };
-
-        let mut code = String::from(self.consume_until(|c| c == "`").trim());
-
-        if lang == "html" {
-            code = preprocess_html(code);
-        }
-        self.consume_chars("`");
-
-        Some(MarkdownNode::Code(lang, code))
-    }
-
-    fn parse_named_url(&mut self) -> ParagraphItem {
-        self.consume();
-
-        let name = self.consume_until(|c| c == "]");
-
-        self.consume();
-
-        let mut url = String::default();
-
-        if self.peek(0) == "(" {
-            self.consume();
-            url = self.consume_until(|c| c == ")");
-
-            self.consume();
-        }
-
-        ParagraphItem::Url(name, url)
-    }
-
-    fn parse_image(&mut self) -> ParagraphItem {
-        self.consume();
-        self.consume();
-
-        let alt_text = self.consume_until(|c| c == "]");
-
-        self.consume();
-        self.consume();
-
-        let url = self.consume_until(|c| c == ")");
-        self.consume();
-
-        ParagraphItem::Image(url, alt_text)
-    }
-
-    fn parse_paragraph(&mut self, single_line: bool) -> Option<MarkdownNode> {
-        let mut result: Vec<ParagraphItem> = Vec::new();
-
-        loop {
-            if self.eof() {
-                break;
-            }
-
-            //     self.consume_until(|c| !is_whitespace(c));
-
-            let curr = self.peek(0);
-
-            if curr == "\n" || curr == "\r\n" {
-                break;
-            }
-
-            let child = match curr.as_str() {
-                "*" => {
-                    let stars = self.consume_until(|c| c != "*").len();
-                    let text = self.consume_until(|c| c == "*");
-                    self.consume_chars("*");
-
-                    if stars == 1 {
-                        ParagraphItem::Italic(text)
-                    } else {
-                        ParagraphItem::Bold(text)
-                    }
-                }
-                "_" => {
-                    self.consume();
-                    let text = if single_line {
-                        self.consume_until(|c| c == "_" || is_newline(c))
-                    } else {
-                        self.consume_until(|c| c == "_")
-                    };
-                    self.consume();
-
-                    ParagraphItem::Italic(text)
-                }
-                "$" => {
-                    self.consume();
-                    let text = self.consume_until(|c| c == "$");
-                    self.consume();
-                    ParagraphItem::InlineMath(text)
-                }
-                "<" => self.parse_url(),
-                "[" => self.parse_named_url(),
-                "!" => self.parse_image(),
-                "`" => {
-                    self.consume();
-                    let code = self.consume_until(|c| c == "`");
-                    self.consume();
-                    ParagraphItem::InlineCode(code)
-                }
-                _ => {
-                    let text = self.consume_until(|c| {
-                        c == "_"
-                            || c == "<"
-                            || c == "*"
-                            || c == "$"
-                            || c == "["
-                            || c == "`"
-                            || c == "|"
-                            || is_newline(c)
-                    });
-                    //TODO: trim text here
-                    ParagraphItem::Text(text)
-                }
-            };
-
-            result.push(child);
-
-            //TODO: dirty fix this should be changed
-            if single_line && self.peek(0) == "|" {
-                break;
-            }
-        }
-
-        Some(MarkdownNode::Paragraph(result, single_line))
-    }
-
-    fn parse_table(&mut self) -> Option<MarkdownNode> {
-        let mut headers: Vec<MarkdownNode> = vec![];
-
-        //TODO: replace all consume_chars("|") by assert_consume("|")
-
-        // Parse headers
-        self.consume_chars("|");
-        while !is_newline(self.peek(0)) {
-            headers.push(self.parse_paragraph(true).unwrap());
-
-            self.consume_chars("|");
-        }
-
-        self.skip_whitespace();
-
-        // Parse horizontal line
-        self.consume_chars("|");
-        while !is_newline(self.peek(0)) {
-            self.consume_until(|c| c != "-" && !is_whitespace(c));
-
-            self.consume_chars("|");
-        }
-
-        self.skip_whitespace();
-
-        // Parse data
-        let mut data: Vec<MarkdownNode> = vec![];
-
-        while !self.eof() && self.peek(0) == "|" {
-            self.consume_chars("|");
-
-            while !is_newline(self.peek(0)) {
-                data.push(self.parse_paragraph(true).unwrap());
-
-                self.consume_chars("|");
-            }
-
-            self.skip_whitespace();
-        }
-
-        Some(MarkdownNode::Table(headers, data))
-    }
-
-    pub fn next_node(&mut self, single_line: bool) -> Option<MarkdownNode> {
-        self.skip_whitespace();
-
-        if self.eof() {
-            return None;
-        }
-
-        let current_char = self.peek(0);
-        let result_node: Option<MarkdownNode> = match current_char.as_str() {
-            "#" => self.parse_header(),
-            "$" => self.parse_math(),
-            "`" => self.parse_code(),
-            "-" => self.parse_list(),
-            "|" => self.parse_table(),
-            "@" => {
-                self.consume();
-                Some(MarkdownNode::PageBreak())
-            }
-            _ => {
-                if current_char == "*" && self.peek(1) != "*" {
-                    return self.parse_list();
-                }
-                self.parse_paragraph(single_line)
-            }
-        };
-
-        result_node
-    }
-
-    pub fn get_html(&mut self, base_path: &Path, fast: bool) -> String {
-        let mut result = String::new();
-
-        loop {
-            let node = self.next_node(false);
-
-            match node {
-                Some(x) => result.push_str(x.to_html(base_path, fast).as_str()),
-                None => break,
-            }
-        }
-
-        result
-    }
-}
-
-impl Iterator for Parser<'_> {
-    type Item = MarkdownNode;
-
-    fn next(&mut self) -> Option<MarkdownNode> {
-        self.next_node(false)
-    }
+    result
 }
