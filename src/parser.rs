@@ -22,10 +22,6 @@ fn is_newline(string: String) -> bool {
     string == "\r\n" || string == "\n"
 }
 
-fn preprocess_html(string: String) -> String {
-    string.replace("<", "&lt;").replace(">", "&gt;")
-}
-
 impl<'a> Parser<'a> {
     pub fn new(input: &'a str) -> Self {
         Parser {

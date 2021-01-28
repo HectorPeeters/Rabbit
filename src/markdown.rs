@@ -9,7 +9,7 @@ use syntect::highlighting::ThemeSet;
 use syntect::html::highlighted_html_for_string;
 use syntect::parsing::SyntaxSet;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MarkdownNode {
     Header(String, usize),
     Paragraph(Vec<ParagraphItem>, bool),
@@ -20,7 +20,7 @@ pub enum MarkdownNode {
     PageBreak(),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ParagraphItem {
     Text(String),
     Italic(String),
@@ -188,7 +188,6 @@ pub fn convert_to_html(path: &str, fast: bool) -> String {
     for node in parser {
         result.push_str(node.to_html(path, fast).as_str())
     }
-
 
     result
 }
