@@ -117,6 +117,9 @@ impl<'a> Parser<'a> {
             let c = self.peek(0);
             if is_newline(c) {
                 self.consume();
+                if self.eof() {
+                    break;
+                }
                 if is_newline(self.peek(0)) {
                     self.consume();
                     break;
