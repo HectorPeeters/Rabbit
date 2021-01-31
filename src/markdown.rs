@@ -12,7 +12,7 @@ use syntect::parsing::SyntaxSet;
 #[derive(Debug, PartialEq)]
 pub enum MarkdownNode {
     Header(String, usize),
-    Paragraph(Vec<ParagraphItem>, bool),
+    Paragraph(Vec<ParagraphItem>),
     List(Vec<MarkdownNode>),
     Math(String),
     Code(String, String),
@@ -133,18 +133,14 @@ impl ToHtml for MarkdownNode {
 
                 highlighted_html_for_string(&processed_code, &ss, &syntax, theme)
             }
-            MarkdownNode::Paragraph(children, single_line) => {
+            MarkdownNode::Paragraph(children) => {
                 let mut result: String = String::default();
 
-                if !single_line {
-                    result.push_str("<p>");
-                }
+                result.push_str("<p>");
                 for child in children {
                     result.push_str(child.to_html(base_path, fast).as_str());
                 }
-                if !single_line {
-                    result.push_str("</p>");
-                }
+                result.push_str("</p>");
 
                 result
             }

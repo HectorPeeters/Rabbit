@@ -1,4 +1,4 @@
-use crate::markdown::MarkdownNode;
+use crate::markdown::{MarkdownNode, ParagraphItem};
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct Parser<'a> {
@@ -107,7 +107,27 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_paragraph(&mut self) -> Option<MarkdownNode> {
-        None
+        let mut result = String::default();
+
+        loop {
+            if self.eof() {
+                break;
+            }
+
+            let c = self.peek(0);
+            if is_newline(c) {
+                self.consume();
+                if is_newline(self.peek(0)) {
+                    self.consume();
+                    break;
+                }
+                result.push_str(" ");
+            } else {
+                result.push_str(self.consume());
+            }
+        }
+
+        Some(MarkdownNode::Paragraph(vec![ParagraphItem::Text(result)]))
     }
 
     pub fn next_node(&mut self) -> Option<MarkdownNode> {
