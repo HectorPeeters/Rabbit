@@ -49,7 +49,7 @@ fn compile(
 
         parsed
     } else {
-        convert_to_html(path.parent().unwrap().to_str().unwrap(), !pdf)
+        convert_to_html(path.to_str().unwrap(), !pdf)
     };
 
     let mut result = if pdf {

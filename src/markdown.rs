@@ -179,7 +179,7 @@ pub fn convert_to_html(path: &str, fast: bool) -> String {
 
     let markdown = std::fs::read_to_string(path).unwrap();
 
-    let mut parser = Parser::new(&markdown);
+    let parser = Parser::new(&markdown);
 
     for node in parser {
         result.push_str(node.to_html(path, fast).as_str())
