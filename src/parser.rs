@@ -38,6 +38,10 @@ impl<'a> Parser<'a> {
         self.data[self.index + index].to_owned()
     }
 
+    fn has_left(&mut self) -> usize {
+        self.data.len() - self.index - 1
+    }
+
     fn consume(&mut self) -> &str {
         let result = self.data[self.index];
         self.index += 1;
@@ -107,6 +111,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_paragraph_bold(&mut self) -> Option<ParagraphItem> {
+        if self.has_left() < 4 {
+            return None;
+        }
+
         if self.peek(0) == "*" && self.peek(1) == "*" {
             self.consume();
             self.consume();

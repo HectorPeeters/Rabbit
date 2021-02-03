@@ -131,3 +131,15 @@ fn parse_asterix_paragraph() {
         ),],))
     );
 }
+
+#[test]
+fn parse_asterix_end_paragraph() {
+    let mut parser = Parser::new("Asterix at the end of this paragraph *");
+
+    assert_eq!(
+        parser.next_node(),
+        Some(MarkdownNode::Paragraph(vec![ParagraphItem::Text(
+"Asterix at the end of this paragraph *".to_string()
+        ),],))
+    );
+}
