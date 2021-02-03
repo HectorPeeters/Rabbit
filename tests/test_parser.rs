@@ -119,3 +119,15 @@ fn parse_bold_start_paragraph() {
         ],))
     );
 }
+
+#[test]
+fn parse_asterix_paragraph() {
+    let mut parser = Parser::new("*non bold* is in this paragraph");
+
+    assert_eq!(
+        parser.next_node(),
+        Some(MarkdownNode::Paragraph(vec![ParagraphItem::Text(
+            "*non bold* is in this paragraph".to_string()
+        ),],))
+    );
+}
