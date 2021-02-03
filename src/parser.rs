@@ -110,6 +110,23 @@ impl<'a> Parser<'a> {
         Some(MarkdownNode::Header(header_name, hashtags.len()))
     }
 
+    fn parse_list(&mut self) -> Option<MarkdownNode> {
+        let mut result: Vec<MarkdownNode> = vec![];
+
+        while self.peek(0) == "-" {
+            self.consume();
+
+            let text = self.consume_until(|c| c == "-").trim().to_string();
+            result.push(MarkdownNode::Paragraph(vec![ParagraphItem::Text(text)]));
+
+            if self.eof() {
+                break;
+            }
+        }
+
+        Some(MarkdownNode::List(result))
+    }
+
     fn parse_paragraph_bold(&mut self) -> Option<ParagraphItem> {
         if self.has_left() < 4 {
             return None;
@@ -186,9 +203,13 @@ impl<'a> Parser<'a> {
         let current_char = self.peek(0);
         let result_node: Option<MarkdownNode> = match current_char.as_str() {
             "#" => self.parse_header(),
+            "-" => self.parse_list(),
             _ => self.parse_paragraph(),
         };
 
-        result_node
+        match result_node {
+            Some(x) => Some(x),
+            None => self.parse_paragraph(),
+        }
     }
 }

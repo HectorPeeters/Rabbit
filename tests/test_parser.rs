@@ -139,7 +139,21 @@ fn parse_asterix_end_paragraph() {
     assert_eq!(
         parser.next_node(),
         Some(MarkdownNode::Paragraph(vec![ParagraphItem::Text(
-"Asterix at the end of this paragraph *".to_string()
+            "Asterix at the end of this paragraph *".to_string()
         ),],))
+    );
+}
+
+#[test]
+fn parse_basic_list() {
+    let mut parser = Parser::new("- Item 1\n- Item 2\n- Item 3");
+
+    assert_eq!(
+        parser.next_node(),
+        Some(MarkdownNode::List(vec![
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 1".to_string())]),
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 2".to_string())]),
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 3".to_string())]),
+        ]))
     );
 }
