@@ -157,3 +157,26 @@ fn parse_basic_list() {
         ]))
     );
 }
+
+#[test]
+fn parse_multiple_lists() {
+    let mut parser = Parser::new("- Item 1\n- Item 2\n- Item 3\n\n- Item 4\n- Item 5\n- Item 6");
+
+    assert_eq!(
+        parser.next_node(),
+        Some(MarkdownNode::List(vec![
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 1".to_string())]),
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 2".to_string())]),
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 3".to_string())]),
+        ]))
+    );
+
+    assert_eq!(
+        parser.next_node(),
+        Some(MarkdownNode::List(vec![
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 4".to_string())]),
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 5".to_string())]),
+            MarkdownNode::Paragraph(vec![ParagraphItem::Text("Item 6".to_string())]),
+        ]))
+    );
+}

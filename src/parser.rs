@@ -116,11 +116,19 @@ impl<'a> Parser<'a> {
         while self.peek(0) == "-" {
             self.consume();
 
-            let text = self.consume_until(|c| c == "-").trim().to_string();
+            let text = self
+                .consume_until(|c| c == "-" || c == "\n")
+                .trim()
+                .to_string();
+
             result.push(MarkdownNode::Paragraph(vec![ParagraphItem::Text(text)]));
 
             if self.eof() {
                 break;
+            }
+
+            if is_newline(&self.peek(0)) {
+                self.consume();
             }
         }
 
