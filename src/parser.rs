@@ -115,45 +115,54 @@ impl<'a> Parser<'a> {
             self.consume();
             return Some(ParagraphItem::Bold(text));
         }
+
         None
     }
 
     fn parse_paragraph(&mut self) -> Option<MarkdownNode> {
         let mut result: Vec<ParagraphItem> = vec![];
-        let mut text = String::default();
+        let mut current_paragraph_text = String::default();
 
         loop {
+            current_paragraph_text += &self.consume_until(|c| c == "*" || is_newline(c));
+
             if self.eof() {
                 break;
             }
 
-            let c = self.peek(0);
-            if is_newline(&c) {
-                self.consume();
-                if self.eof() {
-                    break;
-                }
-                if is_newline(&self.peek(0)) {
-                    self.consume();
-                    break;
-                }
-                text.push_str(" ");
-            } else {
-                let bold = self.parse_paragraph_bold();
-                if let Some(bold) = bold {
-                    if !text.is_empty() {
-                        result.push(ParagraphItem::Text(text));
-                        text = String::default();
+            match &self.peek(0)[..] {
+                "*" => {
+                    let bold = self.parse_paragraph_bold();
+
+                    if let Some(bold) = bold {
+                        if !current_paragraph_text.is_empty() {
+                            result.push(ParagraphItem::Text(current_paragraph_text.clone()));
+                            current_paragraph_text = String::default();
+                        }
+
+                        result.push(bold);
+                    } else {
+                        current_paragraph_text += &self.consume_until(|c| c != "*");
                     }
-                    result.push(bold);
-                } else {
-                    text.push_str(self.consume());
+                }
+                _ => {
+                    self.consume();
+                    if self.eof() {
+                        break;
+                    }
+
+                    if is_newline(&self.peek(0)) {
+                        self.consume();
+                        break;
+                    } else {
+                        current_paragraph_text += " ";
+                    }
                 }
             }
         }
 
-        if !text.is_empty() {
-            result.push(ParagraphItem::Text(text));
+        if !current_paragraph_text.is_empty() {
+            result.push(ParagraphItem::Text(current_paragraph_text));
         }
 
         Some(MarkdownNode::Paragraph(result))
