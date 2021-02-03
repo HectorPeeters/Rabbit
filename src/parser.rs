@@ -14,11 +14,11 @@ impl Iterator for Parser<'_> {
     }
 }
 
-fn is_whitespace(string: String) -> bool {
+fn is_whitespace(string: &str) -> bool {
     string == " " || string == "\t"
 }
 
-fn is_newline(string: String) -> bool {
+fn is_newline(string: &str) -> bool {
     string == "\r\n" || string == "\n"
 }
 
@@ -68,7 +68,7 @@ impl<'a> Parser<'a> {
         result
     }
 
-    fn consume_until(&mut self, f: fn(String) -> bool) -> String {
+    fn consume_until(&mut self, f: fn(&str) -> bool) -> String {
         let mut result = String::default();
 
         loop {
@@ -78,7 +78,7 @@ impl<'a> Parser<'a> {
 
             let c = self.peek(0);
 
-            if f(c) {
+            if f(&c) {
                 break;
             }
 
@@ -95,7 +95,7 @@ impl<'a> Parser<'a> {
     fn parse_header(&mut self) -> Option<MarkdownNode> {
         let hashtags = self.consume_chars("#");
 
-        if !is_whitespace(self.peek(0)) {
+        if !is_whitespace(&self.peek(0)) {
             self.go_back(hashtags.len());
             return None;
         }
@@ -106,8 +106,21 @@ impl<'a> Parser<'a> {
         Some(MarkdownNode::Header(header_name, hashtags.len()))
     }
 
+    fn parse_paragraph_bold(&mut self) -> Option<ParagraphItem> {
+        if self.peek(0) == "*" && self.peek(1) == "*" {
+            self.consume();
+            self.consume();
+            let text = self.consume_until(|c| c == "*");
+            self.consume();
+            self.consume();
+            return Some(ParagraphItem::Bold(text));
+        }
+        None
+    }
+
     fn parse_paragraph(&mut self) -> Option<MarkdownNode> {
-        let mut result = String::default();
+        let mut result: Vec<ParagraphItem> = vec![];
+        let mut text = String::default();
 
         loop {
             if self.eof() {
@@ -115,22 +128,35 @@ impl<'a> Parser<'a> {
             }
 
             let c = self.peek(0);
-            if is_newline(c) {
+            if is_newline(&c) {
                 self.consume();
                 if self.eof() {
                     break;
                 }
-                if is_newline(self.peek(0)) {
+                if is_newline(&self.peek(0)) {
                     self.consume();
                     break;
                 }
-                result.push_str(" ");
+                text.push_str(" ");
             } else {
-                result.push_str(self.consume());
+                let bold = self.parse_paragraph_bold();
+                if let Some(bold) = bold {
+                    if !text.is_empty() {
+                        result.push(ParagraphItem::Text(text));
+                        text = String::default();
+                    }
+                    result.push(bold);
+                } else {
+                    text.push_str(self.consume());
+                }
             }
         }
 
-        Some(MarkdownNode::Paragraph(vec![ParagraphItem::Text(result)]))
+        if !text.is_empty() {
+            result.push(ParagraphItem::Text(text));
+        }
+
+        Some(MarkdownNode::Paragraph(result))
     }
 
     pub fn next_node(&mut self) -> Option<MarkdownNode> {

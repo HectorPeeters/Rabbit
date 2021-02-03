@@ -79,3 +79,43 @@ fn parse_multiple_paragraphs() {
         )]))
     );
 }
+
+#[test]
+fn parse_bold_paragraph() {
+    let mut parser = Parser::new("This is a paragraph with **bold** text");
+
+    assert_eq!(
+        parser.next_node(),
+        Some(MarkdownNode::Paragraph(vec![
+            ParagraphItem::Text("This is a paragraph with ".to_string()),
+            ParagraphItem::Bold("bold".to_string()),
+            ParagraphItem::Text(" text".to_string()),
+        ],))
+    );
+}
+
+#[test]
+fn parse_bold_end_paragraph() {
+    let mut parser = Parser::new("This is a paragraph with **bold**");
+
+    assert_eq!(
+        parser.next_node(),
+        Some(MarkdownNode::Paragraph(vec![
+            ParagraphItem::Text("This is a paragraph with ".to_string()),
+            ParagraphItem::Bold("bold".to_string()),
+        ],))
+    );
+}
+
+#[test]
+fn parse_bold_start_paragraph() {
+    let mut parser = Parser::new("**bold** is in this paragraph");
+
+    assert_eq!(
+        parser.next_node(),
+        Some(MarkdownNode::Paragraph(vec![
+            ParagraphItem::Bold("bold".to_string()),
+            ParagraphItem::Text(" is in this paragraph".to_string()),
+        ],))
+    );
+}
