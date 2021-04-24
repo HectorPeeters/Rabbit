@@ -32,91 +32,41 @@ pub enum ParagraphItem {
 }
 
 pub trait ToHtml {
-    fn to_html(&self, base_path: &str, fast: bool) -> String;
+    fn to_html(&self) -> String;
 }
 
 impl ToHtml for ParagraphItem {
-    fn to_html(&self, base_path: &str, fast: bool) -> String {
+    fn to_html(&self) -> String {
         match self {
             ParagraphItem::Text(text) => String::from(text),
             ParagraphItem::Italic(text) => format!("<em>{}</em>", text),
             ParagraphItem::Bold(text) => format!("<b>{}</b>", text),
             ParagraphItem::Url(name, url) => format!("<a href=\"{}\">{}</a>", url, name),
             ParagraphItem::InlineMath(math) => {
-                if fast {
-                    format!("${}$", math)
-                } else {
-                    tex_to_svg(math, true)
-                }
-            }
-            ParagraphItem::Image(url, alt_text) => {
-                if fast {
-                    format!("<img src=\"{}\" alt=\"{}\">", url, alt_text)
-                } else {
-                    if url.contains("www.") || url.contains("http://") || url.contains("https://") {
-                        return format!("<img src=\"{}\" alt=\"{}\">", url, alt_text);
-                    }
-
-                    let full_path = Path::new(base_path).join(url);
-
-                    let mut f = File::open(&full_path).expect("no file found");
-                    let metadata = fs::metadata(&full_path).expect("unable to read metadata");
-                    let mut buffer = vec![0; metadata.len() as usize];
-                    f.read_exact(&mut buffer).expect("buffer overflow");
-                    let image_data = base64::encode(buffer);
-
-                    let extension = Path::new(url)
-                        .extension()
-                        .and_then(OsStr::to_str)
-                        .expect("Failed to get file extension");
-
-                    format!(
-                        "<img src=\"data:image/{};base64,{}\" alt=\"{}\">",
-                        extension, image_data, alt_text
-                    )
-                }
+                format!("${}$", math)
             }
             ParagraphItem::InlineCode(code) => format!("<code>{}</code>", code),
+            _ => unimplemented!(),
         }
     }
 }
 
-fn tex_to_svg(input: &str, inline: bool) -> String {
-    let mut command = Command::new("tex2svg");
-    command.arg(input);
-
-    if inline {
-        command.arg("--inline");
-    }
-
-    match command.output() {
-        Ok(x) => String::from_utf8(x.stdout).unwrap(),
-        Err(_) => {
-            eprintln!("Failed to parse math: ${}$", input);
-            String::from("<center>MATH PARSING ERROR</center>")
-        }
-    }
-}
 
 impl ToHtml for MarkdownNode {
-    fn to_html(&self, base_path: &str, fast: bool) -> String {
+    fn to_html(&self) -> String {
         match self {
             MarkdownNode::Header(text, level) => format!("<h{}>{}</h{}>", level, text, level),
             MarkdownNode::List(items) => {
                 let mut result: String = String::default();
                 result.push_str("<ul>");
                 for node in items {
-                    result.push_str(&format!("<li>{}</li>", node.to_html(base_path, fast)));
+                    result.push_str(&format!("<li>{}</li>", node.to_html()));
                 }
                 result.push_str("</ul>");
                 result
             }
             MarkdownNode::Math(math) => {
-                if fast {
-                    format!("<center>${}$</center>", math)
-                } else {
-                    format!("<center>{}</center>", tex_to_svg(math, false))
-                }
+                format!("<center>${}$</center>", math)
             }
             MarkdownNode::Code(lang, code) => {
                 let ss = SyntaxSet::load_defaults_newlines();
@@ -138,7 +88,7 @@ impl ToHtml for MarkdownNode {
 
                 result.push_str("<p>");
                 for child in children {
-                    result.push_str(child.to_html(base_path, fast).as_str());
+                    result.push_str(child.to_html().as_str());
                 }
                 result.push_str("</p>");
 
@@ -148,7 +98,7 @@ impl ToHtml for MarkdownNode {
                 let mut header_html = String::default();
 
                 for header in headers {
-                    header_html += &format!("<th>{}</th>", header.to_html(base_path, fast));
+                    header_html += &format!("<th>{}</th>", header.to_html());
                 }
 
                 let mut data_html = String::new();
@@ -157,7 +107,7 @@ impl ToHtml for MarkdownNode {
                         data_html += "<tr>";
                     }
 
-                    data_html += &format!("<td>{}</td>", x.to_html(base_path, fast));
+                    data_html += &format!("<td>{}</td>", x.to_html());
 
                     if i % headers.len() == headers.len() - 1 {
                         data_html += "</tr>";
@@ -172,18 +122,4 @@ impl ToHtml for MarkdownNode {
             MarkdownNode::PageBreak() => String::from("<p style=\"page-break-after: always;\"</p>"),
         }
     }
-}
-
-pub fn convert_to_html(path: &str, fast: bool) -> String {
-    let mut result = String::new();
-
-    let markdown = std::fs::read_to_string(path).unwrap();
-
-    let parser = Parser::new(&markdown);
-
-    for node in parser {
-        result.push_str(node.to_html(path, fast).as_str())
-    }
-
-    result
 }
