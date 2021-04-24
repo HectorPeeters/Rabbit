@@ -127,7 +127,7 @@ impl ToHtml for MarkdownNode {
                     ss.find_syntax_plain_text()
                 } else {
                     ss.find_syntax_by_token(&lang.to_lowercase())
-                        .expect(&format!("Failed to load syntax for {}", lang))
+                        .unwrap_or_else(|| panic!("Failed to load syntax for {}", lang))
                 };
                 let processed_code = code.replace("&lt;", "<").replace("&gt;", ">");
 
@@ -152,12 +152,12 @@ impl ToHtml for MarkdownNode {
                 }
 
                 let mut data_html = String::new();
-                for i in 0..data.len() {
+                for (i, x) in data.iter().enumerate() {
                     if i % headers.len() == 0 {
                         data_html += "<tr>";
                     }
 
-                    data_html += &format!("<td>{}</td>", data[i].to_html(base_path, fast));
+                    data_html += &format!("<td>{}</td>", x.to_html(base_path, fast));
 
                     if i % headers.len() == headers.len() - 1 {
                         data_html += "</tr>";
